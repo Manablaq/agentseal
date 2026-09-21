@@ -111,3 +111,20 @@ tests, runtime evidence, or an explicitly documented protocol assumption.
 78. Backend freeze records policy and manifest identities.
 79. No frontend code may exist before backend freeze.
 80. Frontend state must never present demo data as live protocol state.
+
+## Phase 2 amendment invariants
+
+81. Every policy version binds an exact manifest SHA-256 digest.
+82. The manifest digest is computed over the exact fetched response-body bytes.
+83. Manifest digest encoding is exactly 64 lowercase hexadecimal characters.
+84. The leader verifies the policy-bound manifest digest before parsing.
+85. Every validator independently verifies the same digest before parsing.
+86. Manifest digest mismatch is INCONCLUSIVE and cannot produce PASS.
+87. The manifest authority label is not treated as cryptographic publisher authentication.
+88. The protocol owner is the v1 trust root approving the exact policy and manifest digest tuple.
+89. Public deterministic case selection is not represented as a hidden-test or anti-overfitting guarantee.
+90. Certificate meaning is scoped to the exact policy, manifest, and selected cases.
+91. Manifest URLs must satisfy deterministic canonical URL validation before retrieval.
+92. Assessment endpoint URLs must satisfy equivalent deterministic validation before use.
+93. Lexical URL validation is not represented as proof of DNS or network-layer isolation.
+94. Runtime network-egress assumptions must be verified or further restricted before backend freeze.

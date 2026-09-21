@@ -1,6 +1,6 @@
 # AgentSeal architecture v1
 
-Status: frozen for AgentSeal v1 core implementation.
+Status: Phase 1 architecture freeze amended by `ARCHITECTURE_AMENDMENT_V1.md` during core implementation.
 
 ## Protocol question
 
@@ -175,3 +175,29 @@ Until the core certification mechanism is live and proven:
 - no EVM settlement adapter;
 - no frontend;
 - no arbitrary user-supplied evaluator code.
+
+## Phase 2 provenance and suite-scope refinement
+
+The v1 policy record binds the expected manifest by SHA-256 of the exact HTTP
+response-body bytes in addition to its URL, ID, and descriptive authority.
+
+The leader and validators independently verify that digest before parsing the
+manifest. Digest mismatch is insufficient governing evidence and therefore
+produces `INCONCLUSIVE` rather than an agent-behavior `FAIL`.
+
+The protocol owner is the v1 policy and manifest trust root. The descriptive
+authority string is not treated as a signature, signing key, or independently
+authenticated publisher identity.
+
+AgentSeal v1 deliberately makes no hidden-test guarantee. Public immutable test
+cases may be optimized against. A certificate therefore represents performance
+under the exact recorded policy, manifest, and selected cases rather than
+general capability outside that scope.
+
+Manifest and assessment endpoint URLs must pass deterministic canonical URL
+validation before use. This validation reduces obvious local-target and parser
+ambiguity risks but is not claimed to solve DNS rebinding or all network-level
+SSRF conditions.
+
+Live runtime network-egress behavior must be verified or additionally
+restricted before backend freeze.

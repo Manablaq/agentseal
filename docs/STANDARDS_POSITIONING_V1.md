@@ -1,6 +1,6 @@
 # AgentSeal standards positioning v1
 
-Status: frozen before Intelligent Contract implementation.
+Status: Phase 1 standards position retained during core implementation and subject to `ARCHITECTURE_AMENDMENT_V1.md`.
 
 ## Core purpose
 
@@ -78,3 +78,18 @@ An AgentSeal certificate means only:
 > certification process.
 
 It does not prove performance outside that defined scope.
+
+## V1 provenance and suite-scope clarification
+
+AgentSeal v1 policy provenance is rooted in protocol-owner approval of an exact
+policy tuple that includes the SHA-256 digest of the expected manifest bytes.
+
+The manifest authority label is descriptive metadata. AgentSeal v1 does not
+claim that this label alone authenticates an external publisher or signing key.
+
+The public deterministic evaluation suite is not represented as a hidden-test
+or unpredictability mechanism.
+
+Accordingly, an AgentSeal v1 certificate means that the exact bound subject
+and endpoint demonstrated the capability under the recorded policy, manifest,
+and selected cases. It does not establish capability outside that scope.

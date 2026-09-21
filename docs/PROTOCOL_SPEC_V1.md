@@ -1,6 +1,6 @@
 # AgentSeal protocol specification v1
 
-Status: frozen design candidate before Intelligent Contract implementation.
+Status: Phase 1 design freeze amended by `ARCHITECTURE_AMENDMENT_V1.md` during core implementation.
 
 ## 1. Protocol question
 
@@ -393,3 +393,40 @@ while the certification primitive itself is being proven.
 
 No excluded subsystem may be added before the core backend passes its complete
 verification and Bradbury finality gates.
+
+## 20. Phase 2 architecture amendment incorporation
+
+`ARCHITECTURE_AMENDMENT_V1.md` is a mandatory part of the AgentSeal v1
+protocol definition.
+
+The policy-bound manifest identity now includes:
+
+- authoritative manifest URL;
+- manifest ID;
+- manifest authority metadata;
+- exact SHA-256 digest of the expected manifest response-body bytes.
+
+The SHA-256 digest is encoded as 64 lowercase hexadecimal characters.
+
+The leader and every validator must independently hash the exact fetched body
+before parsing or semantic evaluation.
+
+A fetched manifest whose SHA-256 digest differs from the policy-bound digest
+is governing-evidence failure and therefore `INCONCLUSIVE`; it is not evidence
+that the assessed agent behaviorally failed.
+
+The protocol owner is the v1 trust root that approves the exact policy and
+manifest digest tuple. `manifest_authority` is descriptive metadata and is not
+by itself cryptographic publisher authentication.
+
+The deterministic two-case selection from the public immutable manifest is a
+reproducibility and bounded-cost mechanism. It is not a hidden-test,
+unpredictability, or anti-overfitting guarantee.
+
+Consequently, a certificate is scoped to the exact policy, manifest, and
+selected cases recorded for that assessment.
+
+Remote URLs capable of driving validator retrieval require deterministic URL
+validation. Contract-side lexical URL validation does not by itself prove DNS
+or network-layer isolation; the live runtime assumption remains a backend
+freeze gate.

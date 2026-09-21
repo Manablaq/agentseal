@@ -67,3 +67,32 @@ Every item below is a mandatory release consideration.
 
 Each threat must eventually be addressed by a deterministic guard, a test, a
 runtime proof, or an explicitly documented protocol assumption.
+
+## Phase 2 amendment threats
+
+### Manifest provenance and integrity
+
+- mutable content served from an unchanged manifest URL
+- manifest body whose SHA-256 differs from the owner-approved policy digest
+- descriptive authority metadata mistaken for cryptographic publisher authentication
+- stale or substituted manifest bytes under an otherwise matching URL
+
+### Remote URL and network boundary
+
+- credentials or userinfo embedded in a remote URL
+- explicit-port ambiguity
+- localhost or local-use hostname targeting
+- IPv4 or IPv6 literal targeting
+- malformed or noncanonical DNS hostname forms
+- DNS rebinding or public-name-to-private-address resolution
+- contract lexical validation overstated as complete SSRF protection
+
+### Evaluation-suite scope
+
+- agent optimized specifically for publicly known manifest cases
+- deterministic two-case selection overstated as unpredictable testing
+- certificate scope overstated beyond the exact evaluated suite
+
+These threats are governed by `ARCHITECTURE_AMENDMENT_V1.md` and must be
+addressed by deterministic guards, tests, runtime evidence, explicit scope
+limits, or additional restrictions before backend freeze.
