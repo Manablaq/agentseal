@@ -5,9 +5,10 @@ Every item below is a mandatory release consideration.
 ## Identity
 
 - identity substitution
-- registration substitution
+- profile digest substitution
+- external identity mapping substitution
 - endpoint substitution
-- stale identity material
+- stale profile material
 - cross-agent certificate replay
 - unauthorized certification request
 

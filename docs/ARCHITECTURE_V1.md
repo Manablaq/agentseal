@@ -1,12 +1,12 @@
 # AgentSeal architecture v1
 
-Status: pre-implementation architecture candidate.
+Status: frozen for AgentSeal v1 core implementation.
 
 ## Protocol question
 
 AgentSeal answers:
 
-> Has this exact bound agent demonstrated capability X under immutable policy Y?
+> Did this exact wallet-bound agent endpoint demonstrate capability X under immutable policy Y?
 
 AgentSeal does not claim that an agent is universally trustworthy, safe,
 honest, competent, or legally compliant.
@@ -30,24 +30,32 @@ safer and the runtime interaction mechanism has been independently verified.
 
 ERC-8004 is an interoperability target, not a mandatory runtime dependency.
 
-AgentSeal binds an external agent identity reference and immutable registration
-material.
+AgentSeal v1 does not treat an arbitrary external agent identifier as proof of
+ownership.
 
-A later adapter may integrate AgentSeal results with an ERC-8004 Validation
-Registry after the GenLayer core is independently proven.
+The authoritative v1 subject is the GenLayer transaction sender.
+
+A later adapter may associate finalized AgentSeal results with ERC-8004 only
+after independently verifying the external identity, current owner or operator,
+profile material, and endpoint binding.
 
 ## Identity binding
 
-A certification must bind at least:
+The authoritative certificate subject is:
 
-- agent identity namespace;
-- agent identity identifier;
-- registration digest;
-- endpoint;
-- endpoint configuration digest.
+`gl.message.sender_address`
 
-Changing consequential identity or endpoint material invalidates applicability
-of the existing certificate.
+A certification additionally binds:
+
+- exact profile digest;
+- exact HTTPS endpoint;
+- capability ID;
+- policy ID;
+- policy version;
+- manifest identity.
+
+Changing consequential profile or endpoint material means the old certificate
+does not apply to the changed binding.
 
 ## Capability policy
 
@@ -57,14 +65,14 @@ A policy update creates a new version.
 
 A request binds:
 
+- agent wallet;
+- profile digest;
+- endpoint;
 - capability ID;
 - policy ID;
 - policy version;
-- policy digest;
-- identity reference;
-- registration digest;
-- endpoint digest;
-- request ID.
+- manifest ID;
+- assessment ID.
 
 ## Consequential verdict
 
@@ -85,19 +93,26 @@ silently converted to PASS or FAIL.
 
 ## Certificate lifecycle
 
-REQUESTED
-  -> PASS -> ACTIVE
-  -> FAIL
-  -> INCONCLUSIVE
+Assessment:
+
+PENDING
+  -> PASS -> ACTIVE certificate
+  -> FAIL -> FAILED
+  -> INCONCLUSIVE -> bounded retry or INCONCLUSIVE_FINAL
+  -> deadline -> EXPIRED
+
+Certificate:
 
 ACTIVE
   -> EXPIRED
-  -> CHALLENGED
+  -> challenge opened while certificate remains active
        -> PASS -> ACTIVE
        -> FAIL -> REVOKED
-       -> INCONCLUSIVE -> ACTIVE until original expiry
+       -> INCONCLUSIVE -> bounded retry, then ACTIVE if exhausted
 
-A network failure alone cannot revoke an otherwise valid certificate.
+Opening a challenge alone does not revoke or suspend a certificate.
+
+Infrastructure failure alone cannot revoke an otherwise valid certificate.
 
 ## Consensus requirement
 
@@ -131,10 +146,13 @@ Required controls include:
 - malformed-response handling;
 - transient-failure handling.
 
-HTTP 404, timeout, 5xx, or malformed content must not automatically become
-FAIL.
+Transport failure, timeout, non-success HTTP status, unavailable manifest
+evidence, or evaluator/provider failure is INCONCLUSIVE.
 
-Unavailable evidence must not become PASS.
+A successfully returned agent protocol response with a consequential binding
+mismatch or malformed required protocol payload is FAIL.
+
+Unavailable evidence must never become PASS.
 
 ## Finality
 

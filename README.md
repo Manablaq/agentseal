@@ -9,6 +9,11 @@ capability under an immutable, versioned evaluation policy.
 
 Backend only.
 
+AgentSeal v1 protocol, state machine, standards positioning, and release
+invariants are frozen for core Intelligent Contract implementation.
+
+The Intelligent Contract has not yet been written or deployed.
+
 Frontend development is forbidden until the backend is completely implemented,
 tested, deployed, live-verified, and frozen.
 
