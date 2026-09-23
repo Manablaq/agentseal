@@ -1,0 +1,26 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/fixture.py": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "destination": "/api/fixture.py",
+      "source": "/healthz"
+    },
+    {
+      "destination": "/api/fixture.py",
+      "source": "/stable"
+    },
+    {
+      "destination": "/api/fixture.py",
+      "source": "/drift"
+    },
+    {
+      "destination": "/api/fixture.py",
+      "source": "/fail"
+    }
+  ]
+}

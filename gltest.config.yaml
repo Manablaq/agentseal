@@ -1,0 +1,8 @@
+networks:
+  default: localnet
+  localnet: null
+  testnet_bradbury: {}
+paths:
+  contracts: "contracts"
+  artifacts: "artifacts"
+environment: .env
