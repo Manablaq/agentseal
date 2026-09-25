@@ -58,7 +58,7 @@ def _build_response(mode: str, request: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("evaluation_id must be a string")
 
     challenge = evaluation_id.startswith("agentseal-challenge-v1:")
-    issuance = evaluation_id.startswith("agentseal-evaluation-v1:")
+    issuance = evaluation_id.startswith("agentseal-v1:")
     if not (challenge or issuance):
         raise ValueError("unsupported evaluation domain")
 
