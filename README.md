@@ -7,23 +7,30 @@ capability under an immutable, versioned evaluation policy.
 
 ## Current release phase
 
-Backend implementation in progress.
+The Intelligent Contract backend is implemented and the local multi-validator
+supported-runtime verification matrix is complete.
 
-The Phase 1 protocol and architecture freeze is preserved and explicitly
-amended by `docs/ARCHITECTURE_AMENDMENT_V1.md` where Phase 2 security and
-runtime verification established stronger requirements.
+Verified local/runtime properties include owner-only policy creation, immutable
+policy versions, bounded policy fields, manifest SHA-256 binding, canonical
+manifest-URL validation, Direct Mode security coverage, assessment retry
+semantics, certificate issuance/revocation/expiry, challenge rejection/upholding,
+permissionless expiry recovery, and finalized stable/drift/fail runtime paths.
 
-The deterministic policy core has been implemented. Current verified properties
-include owner-only policy creation, immutable policy versions, bounded policy
-fields, manifest SHA-256 binding, canonical manifest-URL validation, and Direct
-Mode security coverage.
+The committed `fee-profile.json` is derived from finalized RC7 evidence for the
+full 13-operation Bradbury matrix. Its conservative 2× execution-budget envelope
+is an AgentSeal release policy, not a GenLayer protocol requirement.
 
-The consequential assessment, certificate, challenge, expiry, Bradbury
-deployment, and live finality paths remain incomplete and must not be presented
-as released functionality.
+**Bradbury deployment and Bradbury live-finality verification are still
+pending.** The project must not be presented as live-network released until
+those stages and the final backend audit are complete.
 
-Frontend development remains forbidden until the backend is completely
-implemented, tested, deployed, live-verified, and frozen.
+The production fixture endpoint is available at the preserved Vercel project
+URL. Its deployed repaired bytes are SHA-256 recorded, but Vercel metadata did
+not independently establish a cryptographic Git-commit binding; documentation
+must preserve that limitation.
+
+Frontend development remains forbidden until the backend is deployed,
+live-verified, audited, and frozen.
 
 Required order:
 
@@ -34,14 +41,13 @@ Research and feasibility
 -> deterministic verification
 -> Direct Mode verification
 -> adversarial verification
--> multi-validator runtime verification
--> deployment-resource preflight
+-> local multi-validator runtime verification
+-> fee-profile certification
 -> canonical Bradbury deployment
--> live PASS proof
--> live FAIL proof
--> live INCONCLUSIVE proof
--> live challenge/revocation proof
--> expiry proof
+-> Bradbury stable PASS/challenge/revocation proof
+-> Bradbury drift challenge/upheld-revocation proof
+-> Bradbury FAIL proof
+-> expiry/liveness proof
 -> backend certification freeze
 -> frontend
 

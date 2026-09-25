@@ -41,7 +41,7 @@ MANIFEST_ID = "agentseal-bradbury-manifest-v1"
 MANIFEST_AUTHORITY = "AgentSeal Bradbury Fixture Authority"
 CRITERIA = "PASS only when both selected outputs exactly match their case references; otherwise FAIL."
 POLICY_VERSION = 1
-CERT_TTL = 900
+CERT_TTL = 3600
 POLICY_MAX_TTL = 3600
 
 OPERATION_KEYS = [
@@ -195,14 +195,34 @@ def _finalize_step(checkpoint, client, step_key: str, submit):
     record = checkpoint["steps"].get(step_key)
 
     if record is None:
-        tx_hash = submit()
         record = {
-            "tx_hash": _tx_hash_text(tx_hash),
-            "submitted": True,
+            "submission_state": "PREPARED",
             "finalized": False,
         }
         checkpoint["steps"][step_key] = record
         _save_checkpoint(checkpoint)
+
+        try:
+            tx_hash = submit()
+        except BaseException:
+            # A transport exception can happen after the node accepted a write.
+            # Persist an unresolved state and require explicit reconciliation;
+            # never blindly repeat a potentially accepted transaction.
+            record["submission_state"] = "OUTCOME_UNKNOWN"
+            _save_checkpoint(checkpoint)
+            raise
+
+        record["tx_hash"] = _tx_hash_text(tx_hash)
+        record["submitted"] = True
+        record["submission_state"] = "SUBMITTED"
+        _save_checkpoint(checkpoint)
+
+    if not record.get("tx_hash"):
+        raise RuntimeError(
+            f"{step_key} has no transaction hash and submission state "
+            f"{record.get('submission_state', 'UNKNOWN')}; reconcile chain state "
+            "before any further write"
+        )
 
     if record.get("finalized") is True:
         return record["receipt"]

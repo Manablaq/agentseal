@@ -1,0 +1,385 @@
+{
+  "chain_id": 4221,
+  "contract_sha256": "61801db265c19b58f09d14b446af2c46fcb6da050852879a01df01a78f1b726d",
+  "fixture_source_sha": "e8e9d90c124e4b77d2371b57ab7f60fe2d6f4a35",
+  "inputs": {
+    "drift_endpoint": "https://agentseal-bradbury-fixtures.vercel.app/drift",
+    "fail_endpoint": "https://agentseal-bradbury-fixtures.vercel.app/fail",
+    "manifest_url": "https://raw.githubusercontent.com/Manablaq/agentseal/e8e9d90c124e4b77d2371b57ab7f60fe2d6f4a35/fixtures/bradbury/agentseal-manifest-v1.json",
+    "stable_endpoint": "https://agentseal-bradbury-fixtures.vercel.app/stable"
+  },
+  "manifest_sha256": "adebc57268330448f68b1773c29d064f115c1cdbac316e19e2af68df2b611dfa",
+  "measurement_environment": {
+    "conservative_execution_budget_multiplier_bps": 20000,
+    "conservative_execution_budget_policy": "carry forward the existing certified candidate's 2x executionBudgetPerRound envelope uniformly across all measured operations; this is an AgentSeal release-safety policy, not a GenLayer protocol requirement",
+    "docker_project": "agentseal-fee-profiler-rc7",
+    "fixture_service_sha256": "07e77dbf04030ecffd9f8adc616603e78be245466451028bd37a4de9b174a59a",
+    "genvm_executor_selector": "v0.2.17",
+    "kind": "isolated-genlayer-rc7",
+    "operation_01_recovered_from_surviving_finalized_transaction": true,
+    "simulator_chain_id": 61127,
+    "source_contract_mutated": false,
+    "stage1_manifest_sha256": "9e2650427414dd68b0c14e6c2f0908f20c1a9f328502b2428033c57b04ea5c99",
+    "stage2_manifest_sha256": "a22c8e790cecc8019b2a04ba863e93af160f897c693d55c5c839400051f6f15a",
+    "target_chain_id": 4221,
+    "validator_model": "openai/gpt-5-mini",
+    "vercel_commit_binding": "not independently established by deployment metadata; deployed from CLI-staged repaired bytes",
+    "vercel_deployment_id": "dpl_GGKtqVBPGcnUTabP2ZEUmsRMQpJ8",
+    "vercel_project": "agentseal-bradbury-fixtures",
+    "vercel_stable_url": "https://agentseal-bradbury-fixtures.vercel.app"
+  },
+  "operations": {
+    "01_deploy_agentseal": {
+      "estimate_options": {
+        "appealRounds": 0,
+        "executionBudgetPerRound": 188707200000000,
+        "executionConsumed": 0,
+        "leaderTimeunitsAllocation": 100,
+        "messageAllocations": [],
+        "rotations": [
+          0
+        ],
+        "validatorTimeunitsAllocation": 200
+      },
+      "measurement": {
+        "conservative_execution_budget_multiplier_bps": 20000,
+        "final_status": "FINALIZED",
+        "genvm_executor_selector": "v0.2.17",
+        "local_chain_id": 61127,
+        "local_transaction_id": "0x2c45fc1806a5708b421d9ed6e0e91cfa93c3c8e062076a3fd89924b1749ebcf4",
+        "measured": true,
+        "measurement_source": "certified-existing-candidate",
+        "original_lost_raw_sha256": "fb369ef2b4e68d2290e2da49147b70a786aa59920e8e683bd27ee72dbab04d82",
+        "raw_evidence_sha256": "4983a1e109e55332572cf856256a939b1e68622602b4bade611372a0751c1992",
+        "recovered_from_surviving_finalized_transaction": true,
+        "target_chain_id": 4221
+      }
+    },
+    "02_create_policy": {
+      "estimate_options": {
+        "appealRounds": 0,
+        "executionBudgetPerRound": 188707200000000,
+        "executionConsumed": 0,
+        "leaderTimeunitsAllocation": 100,
+        "messageAllocations": [],
+        "rotations": [
+          0
+        ],
+        "validatorTimeunitsAllocation": 200
+      },
+      "measurement": {
+        "conservative_execution_budget_multiplier_bps": 20000,
+        "final_status": "FINALIZED",
+        "genvm_executor_selector": "v0.2.17",
+        "local_chain_id": 61127,
+        "local_transaction_id": "0xaae47d8d7eaaade82ba3c772759172ce698e8aa047d6e7cb106273100038dc45",
+        "measured": true,
+        "measurement_source": "certified-existing-candidate",
+        "policy_valid_until": 1790833567,
+        "preflight_request_raw_sha256": "b74dd12717ed7f71ab25a50991bc67518620c57a01ae38e026c0803cac61339d",
+        "preflight_response_raw_sha256": "6a2055ceaa15381b13061baa5a722fce7eab587e0819eeba025d666f1dec7cee",
+        "raw_evidence_sha256": "cd9e594ad97f5f3eb2bb6b4ab5df8384d7421adf0bb65bfbc91af6d44bc20a0c",
+        "target_chain_id": 4221
+      }
+    },
+    "03_create_stable_assessment": {
+      "estimate_options": {
+        "appealRounds": 0,
+        "executionBudgetPerRound": 188707200000000,
+        "executionConsumed": 0,
+        "leaderTimeunitsAllocation": 100,
+        "messageAllocations": [],
+        "rotations": [
+          0
+        ],
+        "validatorTimeunitsAllocation": 200
+      },
+      "measurement": {
+        "conservative_execution_budget_multiplier_bps": 20000,
+        "estimate_response_sha256": "00b95f7f1013ff5a4ec7765d20b0e8ad97cc8bb8490061b4e4974e5f2cb0a742",
+        "final_status": "FINALIZED",
+        "local_chain_id": 61127,
+        "local_transaction_id": "0x6dec3519bca9a5cef41ce2c81a9f55f625b7bd2d40f983f395f43bc39b8fedd7",
+        "measured": true,
+        "measured_recommended_execution_budget_per_round": 94353600000000,
+        "measurement_stage": "stage1-recovery-stable-3600",
+        "profile_execution_budget_per_round": 188707200000000,
+        "raw_evidence_sha256": "d1f1ff4e81f8c2255bd755aec7b27f2a64d6b7bd2d3fe7c45506bd39334e346a",
+        "semantic_outcome": "assessment PENDING after creation; requested certificate TTL 3600",
+        "target_chain_id": 4221
+      }
+    },
+    "04_evaluate_stable_assessment": {
+      "estimate_options": {
+        "appealRounds": 0,
+        "executionBudgetPerRound": 189216000000000,
+        "executionConsumed": 0,
+        "leaderTimeunitsAllocation": 100,
+        "messageAllocations": [],
+        "rotations": [
+          0
+        ],
+        "validatorTimeunitsAllocation": 200
+      },
+      "measurement": {
+        "conservative_execution_budget_multiplier_bps": 20000,
+        "estimate_response_sha256": "fb7c03c4815619c6bbbc5a8184f1f7525b8d68bdbd86eca0075cff0439e0b1fd",
+        "final_status": "FINALIZED",
+        "local_chain_id": 61127,
+        "local_transaction_id": "0xefd1501c89c1ab68141d2cb0c910bf3c5931655b59073d198e284dbf6429b54e",
+        "measured": true,
+        "measured_recommended_execution_budget_per_round": 94608000000000,
+        "measurement_stage": "stage1-recovery-stable-3600",
+        "profile_execution_budget_per_round": 189216000000000,
+        "raw_evidence_sha256": "34b4d2bfca6668fba134cb5170ff5d26f5e8a82be60716d523b4ba0eb69ddb7b",
+        "semantic_outcome": "assessment PASSED; certificate ACTIVE",
+        "target_chain_id": 4221
+      }
+    },
+    "05_open_stable_challenge": {
+      "estimate_options": {
+        "appealRounds": 0,
+        "executionBudgetPerRound": 188707200000000,
+        "executionConsumed": 0,
+        "leaderTimeunitsAllocation": 100,
+        "messageAllocations": [],
+        "rotations": [
+          0
+        ],
+        "validatorTimeunitsAllocation": 200
+      },
+      "measurement": {
+        "conservative_execution_budget_multiplier_bps": 20000,
+        "estimate_response_sha256": "9480a651223f8b9161a61aefb3f79255137550fb61b725d41ff8ab47b04ec468",
+        "final_status": "FINALIZED",
+        "local_chain_id": 61127,
+        "local_transaction_id": "0xfb8107f2e24ea02711e4e34890b612f66b139c8c40872aaba5c344c42128df66",
+        "measured": true,
+        "measured_recommended_execution_budget_per_round": 94353600000000,
+        "measurement_stage": "stage1-recovery-stable-3600",
+        "profile_execution_budget_per_round": 188707200000000,
+        "raw_evidence_sha256": "d98fd58da7549ba716ebddec07f91b3cd822838b7b2de7decc71b3b3d07aa71c",
+        "semantic_outcome": "challenge PENDING after creation",
+        "target_chain_id": 4221
+      }
+    },
+    "06_evaluate_stable_challenge": {
+      "estimate_options": {
+        "appealRounds": 0,
+        "executionBudgetPerRound": 189216000000000,
+        "executionConsumed": 0,
+        "leaderTimeunitsAllocation": 100,
+        "messageAllocations": [],
+        "rotations": [
+          0
+        ],
+        "validatorTimeunitsAllocation": 200
+      },
+      "measurement": {
+        "conservative_execution_budget_multiplier_bps": 20000,
+        "estimate_response_sha256": "e4d8b063169b0bd1552c6f3df95c788f9972635b131520fc05c4db98744c6eb8",
+        "final_status": "FINALIZED",
+        "local_chain_id": 61127,
+        "local_transaction_id": "0xc690bc4613a6f23a9308ef67a27db11c9bb459d6c2cd4fc5151ebc68edb5b7fb",
+        "measured": true,
+        "measured_recommended_execution_budget_per_round": 94608000000000,
+        "measurement_stage": "stage1-recovery-stable-3600",
+        "profile_execution_budget_per_round": 189216000000000,
+        "raw_evidence_sha256": "4a108bc451aa3b6ae1057eface5eaa9bcf5c40fb0348420c7a0eacdbf17983c5",
+        "semantic_outcome": "challenge REJECTED with PASS; certificate remains ACTIVE",
+        "target_chain_id": 4221
+      }
+    },
+    "07_revoke_stable_certificate": {
+      "estimate_options": {
+        "appealRounds": 0,
+        "executionBudgetPerRound": 188707200000000,
+        "executionConsumed": 0,
+        "leaderTimeunitsAllocation": 100,
+        "messageAllocations": [],
+        "rotations": [
+          0
+        ],
+        "validatorTimeunitsAllocation": 200
+      },
+      "measurement": {
+        "conservative_execution_budget_multiplier_bps": 20000,
+        "estimate_response_sha256": "7c56f54730c08ea41534b25eda39c2f6bd1063e69407499feb5575641169d940",
+        "final_status": "FINALIZED",
+        "local_chain_id": 61127,
+        "local_transaction_id": "0xc34abffd94ab4e48460244f05a49ad90841482e6d190a685490063801694d888",
+        "measured": true,
+        "measured_recommended_execution_budget_per_round": 94353600000000,
+        "measurement_stage": "stage1-recovery-stable-3600",
+        "profile_execution_budget_per_round": 188707200000000,
+        "raw_evidence_sha256": "2b40df632bc2381e2fa62b9a48796a0ecc4717d12e2655ba21ab5d8b080150d6",
+        "semantic_outcome": "certificate REVOKED; source SUBJECT_SELF_REVOKE",
+        "target_chain_id": 4221
+      }
+    },
+    "08_create_drift_assessment": {
+      "estimate_options": {
+        "appealRounds": 0,
+        "executionBudgetPerRound": 188707200000000,
+        "executionConsumed": 0,
+        "leaderTimeunitsAllocation": 100,
+        "messageAllocations": [],
+        "rotations": [
+          0
+        ],
+        "validatorTimeunitsAllocation": 200
+      },
+      "measurement": {
+        "conservative_execution_budget_multiplier_bps": 20000,
+        "estimate_response_sha256": "dc240de8f64f43b1c55f773c8f00b71c2ab287bc7c8403956cae7c81ac590190",
+        "final_status": "FINALIZED",
+        "local_chain_id": 61127,
+        "local_transaction_id": "0x4e2ea7f975e02d68ce6831321c47595495223d11e74f59bb0abd13b610117203",
+        "measured": true,
+        "measured_recommended_execution_budget_per_round": 94353600000000,
+        "measurement_stage": "stage2-drift-fail",
+        "profile_execution_budget_per_round": 188707200000000,
+        "raw_evidence_sha256": "9876d57a0facd96e34a6f8763711f54d7b8505948ff1837c2a82686bc3e7ddbe",
+        "semantic_outcome": "drift assessment PENDING after creation",
+        "target_chain_id": 4221
+      }
+    },
+    "09_evaluate_drift_assessment": {
+      "estimate_options": {
+        "appealRounds": 0,
+        "executionBudgetPerRound": 189216000000000,
+        "executionConsumed": 0,
+        "leaderTimeunitsAllocation": 100,
+        "messageAllocations": [],
+        "rotations": [
+          0
+        ],
+        "validatorTimeunitsAllocation": 200
+      },
+      "measurement": {
+        "conservative_execution_budget_multiplier_bps": 20000,
+        "estimate_response_sha256": "a0408abfc037644915dfdf4dc919d4b6f6535a4926747bd238864b416c5e7b84",
+        "final_status": "FINALIZED",
+        "local_chain_id": 61127,
+        "local_transaction_id": "0x4785166bc3f8082fff49a6f34087a92fd8be04a57328a861ed33719bb3442509",
+        "measured": true,
+        "measured_recommended_execution_budget_per_round": 94608000000000,
+        "measurement_stage": "stage2-drift-fail",
+        "profile_execution_budget_per_round": 189216000000000,
+        "raw_evidence_sha256": "c0808caa5ed58fe43daa463bc061b6f38d377bf3128343aa565d5989beb8a1bd",
+        "semantic_outcome": "drift assessment PASSED; certificate ACTIVE",
+        "target_chain_id": 4221
+      }
+    },
+    "10_open_drift_challenge": {
+      "estimate_options": {
+        "appealRounds": 0,
+        "executionBudgetPerRound": 188707200000000,
+        "executionConsumed": 0,
+        "leaderTimeunitsAllocation": 100,
+        "messageAllocations": [],
+        "rotations": [
+          0
+        ],
+        "validatorTimeunitsAllocation": 200
+      },
+      "measurement": {
+        "conservative_execution_budget_multiplier_bps": 20000,
+        "estimate_response_sha256": "548a996e30eabf7fab8a5c4cdac666021fb5a755b0cae846782dce1bd8e85cd1",
+        "final_status": "FINALIZED",
+        "local_chain_id": 61127,
+        "local_transaction_id": "0x79827cf7162fb4e531e92e1ad1a2cde8079b9ca5b932217553c8208be37e20a2",
+        "measured": true,
+        "measured_recommended_execution_budget_per_round": 94353600000000,
+        "measurement_stage": "stage2-drift-fail",
+        "profile_execution_budget_per_round": 188707200000000,
+        "raw_evidence_sha256": "8a65c937957162b473e5f1957ea2aad867a8bc082a7bbd24a96cfd4d5bd3966f",
+        "semantic_outcome": "drift challenge PENDING after creation",
+        "target_chain_id": 4221
+      }
+    },
+    "11_evaluate_drift_challenge": {
+      "estimate_options": {
+        "appealRounds": 0,
+        "executionBudgetPerRound": 189216000000000,
+        "executionConsumed": 0,
+        "leaderTimeunitsAllocation": 100,
+        "messageAllocations": [],
+        "rotations": [
+          0
+        ],
+        "validatorTimeunitsAllocation": 200
+      },
+      "measurement": {
+        "conservative_execution_budget_multiplier_bps": 20000,
+        "estimate_response_sha256": "b6e0ee7ebf99df694cff74cca1522a420adc1200fc4cda9ecf983557ec383ea2",
+        "final_status": "FINALIZED",
+        "local_chain_id": 61127,
+        "local_transaction_id": "0xdb9eeb61753c688352312e1c5bc11a85cc44b4c67045a206a4a8c6a112a6ff75",
+        "measured": true,
+        "measured_recommended_execution_budget_per_round": 94608000000000,
+        "measurement_stage": "stage2-drift-fail",
+        "profile_execution_budget_per_round": 189216000000000,
+        "raw_evidence_sha256": "6df7f2d1f82c707ea4e18eb9694c09135e4ca5cbdc31cc54ca4d73089d9dcbaf",
+        "semantic_outcome": "challenge UPHELD with FAIL; certificate REVOKED; source CHALLENGE_CONSENSUS",
+        "target_chain_id": 4221
+      }
+    },
+    "12_create_fail_assessment": {
+      "estimate_options": {
+        "appealRounds": 0,
+        "executionBudgetPerRound": 188707200000000,
+        "executionConsumed": 0,
+        "leaderTimeunitsAllocation": 100,
+        "messageAllocations": [],
+        "rotations": [
+          0
+        ],
+        "validatorTimeunitsAllocation": 200
+      },
+      "measurement": {
+        "conservative_execution_budget_multiplier_bps": 20000,
+        "estimate_response_sha256": "36a1b9e500d650acc85ffcc96badb33d3386fe477087f10c0ca3a8735293587b",
+        "final_status": "FINALIZED",
+        "local_chain_id": 61127,
+        "local_transaction_id": "0x5d8d48b233a7da813b7b05114eb07177fd79ed856ec0e10e954fe6322ed97934",
+        "measured": true,
+        "measured_recommended_execution_budget_per_round": 94353600000000,
+        "measurement_stage": "stage2-drift-fail",
+        "profile_execution_budget_per_round": 188707200000000,
+        "raw_evidence_sha256": "0ea542b03378f63e1dd9020cc433314dd1b86c218b6031a090b9bc0c2cf39747",
+        "semantic_outcome": "fail assessment PENDING after creation",
+        "target_chain_id": 4221
+      }
+    },
+    "13_evaluate_fail_assessment": {
+      "estimate_options": {
+        "appealRounds": 0,
+        "executionBudgetPerRound": 189216000000000,
+        "executionConsumed": 0,
+        "leaderTimeunitsAllocation": 100,
+        "messageAllocations": [],
+        "rotations": [
+          0
+        ],
+        "validatorTimeunitsAllocation": 200
+      },
+      "measurement": {
+        "conservative_execution_budget_multiplier_bps": 20000,
+        "estimate_response_sha256": "c87827e9fb604138d38e0e895e8cf30b1ec9630f019e6534f9688ac72f8207f2",
+        "final_status": "FINALIZED",
+        "local_chain_id": 61127,
+        "local_transaction_id": "0xb5a6fbd42ec6d827f3182f22eb6e7548af2c09f6aacbdfaece49ec45ad9c944b",
+        "measured": true,
+        "measured_recommended_execution_budget_per_round": 94608000000000,
+        "measurement_stage": "stage2-drift-fail",
+        "profile_execution_budget_per_round": 189216000000000,
+        "raw_evidence_sha256": "b57317d426b0651f8fb1905097e86c659a99838fc31df699923b4969fd418da9",
+        "semantic_outcome": "assessment FAILED with FAIL; certificate_id 0; no certificate",
+        "target_chain_id": 4221
+      }
+    }
+  },
+  "profile_sha256": "bc32dc6c11ac40ce5593a38dbb01a073dc52258bcb9efd0ad7189109b440df39",
+  "schema": "agentseal-fee-profile-v1"
+}

@@ -1,81 +1,124 @@
-# AgentSeal Progress 5 checkpoint — 2026-09-25
+# AgentSeal Progress 5 completion checkpoint — 2026-09-25
 
-This document records the repository/runtime checkpoint reached during the isolated RC7 fee-profile workflow. It is a status record, not a claim that Progress 5 is complete.
+This file is the final local Progress 5 checkpoint. The legacy filename is
+preserved for continuity. Bradbury deployment remains a separate next phase and
+has not yet been performed.
 
-## Repository repair
+## Repository and source identity
 
-- Branch: `release/agentseal-bradbury-fixtures-v1`
-- Parent before this checkpoint commit: `e8e9d90c124e4b77d2371b57ab7f60fe2d6f4a35`
-- Certified fixture repair: change the issuance evaluation-ID prefix accepted by `fixtures/bradbury/service/fixture_service.py` from `agentseal-evaluation-v1:` to the contract-canonical `agentseal-v1:`.
-- Repaired fixture source SHA-256: `07e77dbf04030ecffd9f8adc616603e78be245466451028bd37a4de9b174a59a`.
-- Full regression after the repair: `363 passed, 1 skipped`.
-- No contract source change was required.
+- Base commit entering final reconciliation:
+  `1bb1ff6972af9f744a2f86bd560abae68d78c179`.
+- Base tree:
+  `caaea11bad57bf41adb9943f3cd7de58d121be97`.
+- Contract SHA-256:
+  `61801db265c19b58f09d14b446af2c46fcb6da050852879a01df01a78f1b726d`.
+- Repaired fixture-service SHA-256:
+  `07e77dbf04030ecffd9f8adc616603e78be245466451028bd37a4de9b174a59a`.
+- Agent profile SHA-256:
+  `bc32dc6c11ac40ce5593a38dbb01a073dc52258bcb9efd0ad7189109b440df39`.
+- Manifest SHA-256:
+  `adebc57268330448f68b1773c29d064f115c1cdbac316e19e2af68df2b611dfa`.
+- Frozen manifest/source commit:
+  `e8e9d90c124e4b77d2371b57ab7f60fe2d6f4a35`.
 
 ## Production fixture deployment
 
 The repaired fixture was deployed exactly once to the existing Vercel project:
 
-- Project: `agentseal-bradbury-fixtures`
-- Project ID: `prj_BvYSfGxbOoVuOCCjopVAVh4cK0St`
-- Deployment ID: `dpl_GGKtqVBPGcnUTabP2ZEUmsRMQpJ8`
-- Deployment URL: `https://agentseal-bradbury-fixtures-r38znddk8-mr-albert-s-projects.vercel.app`
-- Stable URL preserved: `https://agentseal-bradbury-fixtures.vercel.app`
-- Exact operation-04 attempt-2 fixture request now returns HTTP 200 with the deterministic `live-01` and `live-06` reference outputs.
-- The deployment was produced from CLI-staged repaired bytes; the live fixture implementation is therefore not independently Git-commit-pinned by Vercel metadata. This limitation must not be represented as a cryptographic source binding.
+- Project: `agentseal-bradbury-fixtures`.
+- Project ID: `prj_BvYSfGxbOoVuOCCjopVAVh4cK0St`.
+- Deployment ID: `dpl_GGKtqVBPGcnUTabP2ZEUmsRMQpJ8`.
+- Stable URL: `https://agentseal-bradbury-fixtures.vercel.app`.
+- Exact repaired fixture SHA-256:
+  `07e77dbf04030ecffd9f8adc616603e78be245466451028bd37a4de9b174a59a`.
 
-## Current isolated RC7 operation-04 state
+The deployment was produced from CLI-staged repaired bytes. Vercel metadata did
+not independently expose a cryptographic Git-commit binding for those deployed
+bytes. This limitation remains explicit.
 
-- Assessment ID: `1`
-- Assessment status: `PENDING`
-- Effective status: `PENDING`
-- Attempt count: `1 / 3`
-- Last verdict: `INCONCLUSIVE`
-- Selected cases: `live-01`, `live-06`
-- Certificate: absent
-- Database transaction count: `6`
-- Operation-04 attempt 2 has **not** been submitted or consumed on-chain.
-- Checkpoint and fee-profile candidate remained unchanged through the failed simulation diagnostics.
+## RC7 supported-runtime verification
 
-## Attempt-2 deterministic binding
+- Isolated simulator chain ID: `61127`.
+- Contract address: `0x0aD72A9a303bDF888d3bf7d76e3568248a353199`.
+- Subject: `0xF97489d7C61187BA2F99d89fe75274BBa7776908`.
+- Validator count: `5`.
+- Validator model: `openai/gpt-5-mini`.
+- Stage-1 manifest SHA-256:
+  `9e2650427414dd68b0c14e6c2f0908f20c1a9f328502b2428033c57b04ea5c99`.
+- Stage-2 manifest SHA-256:
+  `a22c8e790cecc8019b2a04ba863e93af160f897c693d55c5c839400051f6f15a`.
 
-- Evaluation ID: `agentseal-v1:61127:0x0ad72a9a303bdf888d3bf7d76e3568248a353199:1:2`
-- Selection-material SHA-256: `97b0e11bc74e08f0d0bef3a58c5f2e34707e1c7eab62863609a34634bd15dfb3`
-- Stable exact response SHA-256 from R2I: `37e7e6e1dfea106d4d89a8c5b28ae71f53cf77ff5b68f4591269cb26b128ef56`
+The final local semantic matrix proves:
 
-## R2I semantic simulation result
+- Stable assessment: `PASSED`.
+- Stable challenge: `REJECTED`; certificate remained active.
+- Direct subject revocation: certificate `REVOKED`, source
+  `SUBJECT_SELF_REVOKE`.
+- Drift assessment: `PASSED`.
+- Drift challenge: `UPHELD`; certificate `REVOKED`, source
+  `CHALLENGE_CONSENSUS`.
+- Fail assessment: `FAILED`; certificate ID `0`; no certificate issued.
 
-The deterministic endpoint failure was resolved, but the single authorized post-repair semantic fee simulation did not complete:
+Stage-1 and Stage-2 writes were submitted once, tracked to `FINALIZED`, and
+their finality evidence was SHA-256 recorded.
 
-- Estimate request SHA-256: `3cce9840728b11076a93e1540d0c72abc87647d28cf6ced04fcf2a17ac792155`
-- Estimate response SHA-256: `47f6763aa3839b28d5be7993d8596cf6215e0e97b46899c097786ebce1d8be97`
-- JSON-RPC error code: `-32603`
-- Error: `GenVM internal error: LLM_EXECUTION_ERROR`
-- The simulation persisted no transaction and did not increment the assessment attempt count.
+## Expiry and liveness recovery
 
-## Corrected runtime classification (R2L)
+The original stable certificate used a 900-second TTL. Operation 05 finalized,
+but its certificate/challenge expired before operation 06 could be submitted.
+The explicit permissionless expiry paths were then exercised to materialize the
+expired challenge and certificate.
 
-R2K's earlier `PROVIDER_UPSTREAM_5XX_FAILURE` classification was invalid: its bare `504` match came from the source-code location `src/lib.rs:504`, not an HTTP 504 response.
+A fresh stable lifecycle used the policy maximum 3600-second TTL and completed
+stable challenge evaluation and direct revocation with finality. The Bradbury
+integration test now uses `CERT_TTL = 3600`.
 
-R2L's context-aware result is:
+## Final fee profile
 
-`GENVM_LLM_EXECUTION_ERROR_UNDERLYING_PROVIDER_CAUSE_NOT_EXPOSED`
+- Artifact: `fee-profile.json`.
+- SHA-256:
+  `5a45f83b7d5af82452bb20221bf9f4afb0b6014fd2e075744c2d37947b9e992e`.
+- Schema: `agentseal-fee-profile-v1`.
+- Target chain ID: `4221`.
+- Operation count: `13`.
+- Conservative execution-budget multiplier: `2×` (`20000` bps).
+- The multiplier is an AgentSeal release-safety policy, not a GenLayer protocol
+  requirement.
+- Portable evidence ledger:
+  `docs/RC7_FEE_PROFILE_EVIDENCE_2026-09-25.md`.
 
-R2L found no explicit provider HTTP 401, 403, 429, or 5xx status, and no explicit authentication, rate-limit, timeout, network, or upstream-failure phrase. Therefore the underlying provider/runtime cause remains unresolved.
+## Retry and finality hardening
 
-R2L summary SHA-256:
+The Bradbury integration checkpoint persists submission intent before a write.
+An ambiguous submission result is marked `OUTCOME_UNKNOWN` and is not blindly
+retried; chain state must be reconciled first.
 
-`e1e0f87f4adb13143f2756eb0e4750a67a4ab19da5b63ffd3d31675a426624d0`
+The RC7 state reader checks chain identity before contract reads and
+distinguishes latest-final from latest-nonfinal probing.
+
+## Final local release gates
+
+- `genvm-lint check contracts/agentseal.py`: PASS.
+- `genvm-lint typecheck contracts/agentseal.py`: PASS.
+- Exact Direct Mode regression:
+  `363 passed in 8.01s`.
+- Safe non-live release guards:
+  `7 passed in 0.02s`.
+- `fee-profile.json` structure/portability guard: PASS.
+- `artifacts/.gitkeep` restored to the exact tracked empty file after the test
+  harness cleared the artifacts directory.
+- Bradbury live integration remains opt-in behind
+  `AGENTSEAL_RUN_BRADBURY_SUPPORTED_RUNTIME=1`.
 
 ## Safety boundary
 
 At this checkpoint:
 
-- No Bradbury blockchain write was performed.
-- No operation-04 attempt-2 transaction was submitted.
-- No blind semantic simulation retry is authorized by this record.
-- The next step is a non-blind provider/runtime health check that does not consume operation-04 attempt 2.
-- Only after runtime health is established should a new read-only fee preflight and a separately authorized one-shot local RC7 attempt-2 submission be considered.
-
-## Remaining Progress 5 work
-
-After the runtime blocker is resolved, Progress 5 still needs operation-04 attempt 2/finality and the planned operations 05–13, followed by final fee-profile/checkpoint reconciliation. Bradbury live-network work remains a separate later phase.
+- Bradbury contract deployment: **not performed**.
+- Bradbury contract writes: **none**.
+- Additional Vercel deployment: **none**.
+- Local RC7 runtime matrix: **complete**.
+- Final fee profile: **complete**.
+- Local release verification: **complete**.
+- Next phase: canonical Bradbury deployment, followed by the live finalized
+  13-operation matrix and final backend audit/freeze.
