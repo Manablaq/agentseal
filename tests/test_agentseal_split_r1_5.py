@@ -16,17 +16,48 @@ from glsim.state import StateStore
 ROOT = Path(__file__).resolve().parents[1]
 
 MONOLITH = ROOT / "contracts" / "agentseal.py"
+
+POLICY = ROOT / "contracts" / "agentseal_policy_registry.py"
 REGISTRY = ROOT / "contracts" / "agentseal_registry.py"
+CERTIFICATE_REGISTRY = ROOT / "contracts" / "agentseal_certificate_registry.py"
+SUPPORT = ROOT / "contracts" / "agentseal_deterministic_support.py"
 CHALLENGE = ROOT / "contracts" / "agentseal_challenge.py"
-ASSESSMENT_EVALUATOR = ROOT / "contracts" / "agentseal_assessment_evaluator.py"
-CHALLENGE_EVALUATOR = ROOT / "contracts" / "agentseal_challenge_evaluator.py"
+SEMANTIC_JUDGE = ROOT / "contracts" / "agentseal_semantic_judge.py"
+ASSESSMENT_EVALUATOR = (
+    ROOT / "contracts" / "agentseal_assessment_evidence_evaluator.py"
+)
+CHALLENGE_EVALUATOR = (
+    ROOT / "contracts" / "agentseal_challenge_evidence_evaluator.py"
+)
+
+# Historical monolith-parity guards remain intentionally bound to the
+# pre-R3 evaluator files. They are not deployment fingerprints.
+LEGACY_ASSESSMENT_EVALUATOR = (
+    ROOT / "contracts" / "agentseal_assessment_evaluator.py"
+)
+LEGACY_CHALLENGE_EVALUATOR = (
+    ROOT / "contracts" / "agentseal_challenge_evaluator.py"
+)
 
 EXPECTED_SHA256 = {
-    MONOLITH: "61801db265c19b58f09d14b446af2c46fcb6da050852879a01df01a78f1b726d",
-    REGISTRY: "78a90c8d481ce1916525140fff852a50c112933d7390bb9bb6c312268634750f",
-    CHALLENGE: "83af923a2bcef7a0c197dd307f70889eea07bfe58b68354e83a410825ad86bb8",
-    ASSESSMENT_EVALUATOR: "16a9674adba592ad530e51d8c808791f1dcab70a35bc5b36a946ab19dcbbb8e2",
-    CHALLENGE_EVALUATOR: "58616f754d4e54fc2ed9739d2574341f6a6b23f42d7600e2228037e02c6b1ca4",
+    MONOLITH:
+        "61801db265c19b58f09d14b446af2c46fcb6da050852879a01df01a78f1b726d",
+    POLICY:
+        "da593bf8276c1603c2ca1af2933057eef59cd80eeef72e0d5682f3dc0e755240",
+    REGISTRY:
+        "885ce68a6e547a71e29b8ff5549061909a6830a98bcaebe49db7cc93cde0b4e2",
+    CERTIFICATE_REGISTRY:
+        "d6cfa80f8a7228e4c05cbbf35f01e484049a7404b2e872cc5f9ae9b386ce107f",
+    SUPPORT:
+        "cbe6b49a5523630a1426eb92dc14b5550875058cd8cb292bdf472ddaa59ce5ca",
+    CHALLENGE:
+        "6b63365669d6288fc6df712767e14647a62fc12e17759f9e46746a8a27c3c026",
+    SEMANTIC_JUDGE:
+        "28b1d33d5ca52613b7d033258b84e1c6128542c2f23a9ca617554e0313084ee2",
+    ASSESSMENT_EVALUATOR:
+        "07e2c5ba44c90f2236c58b87da88c0263b1995e38b634172b2fdee1172c2bbbf",
+    CHALLENGE_EVALUATOR:
+        "af6844036f705ec2380f560633aab679bbaf4d0cdcb14b5ac4c7c472fcb99037",
 }
 
 OWNER = "0x" + "11" * 20
@@ -259,7 +290,7 @@ def _sim_engine(seed: str, harness: SemanticHarness | None = None):
         engine.deactivate()
 
 
-def _drain_messages(engine, registry_address: str, *, limit: int = 12) -> int:
+def _drain_messages(engine, registry_address: str, *, limit: int = 24) -> int:
     steps = 0
 
     while engine._post_queue:
@@ -282,35 +313,92 @@ def _drain_messages(engine, registry_address: str, *, limit: int = 12) -> int:
 
 
 def _deploy_split(engine):
-    registry_address, _ = engine.deploy(
-        str(REGISTRY),
+    policy_address, _ = engine.deploy(
+        str(POLICY),
         [],
         {},
         sender=OWNER,
     )
 
-    registry = _addr(registry_address)
+    registry_address, _ = engine.deploy(
+        str(REGISTRY),
+        [_addr(policy_address)],
+        {},
+        sender=OWNER,
+    )
 
-    assessment_evaluator_address, _ = engine.deploy(
-        str(ASSESSMENT_EVALUATOR),
-        [registry],
+    certificate_registry_address, _ = engine.deploy(
+        str(CERTIFICATE_REGISTRY),
+        [
+            _addr(registry_address),
+            _addr(policy_address),
+        ],
+        {},
+        sender=OWNER,
+    )
+
+    support_address, _ = engine.deploy(
+        str(SUPPORT),
+        [_addr(certificate_registry_address)],
         {},
         sender=OWNER,
     )
 
     challenge_address, _ = engine.deploy(
         str(CHALLENGE),
-        [registry],
+        [_addr(certificate_registry_address)],
         {},
         sender=OWNER,
     )
 
-    challenge = _addr(challenge_address)
+    semantic_judge_address, _ = engine.deploy(
+        str(SEMANTIC_JUDGE),
+        [
+            _addr(registry_address),
+            _addr(challenge_address),
+        ],
+        {},
+        sender=OWNER,
+    )
+
+    assessment_evaluator_address, _ = engine.deploy(
+        str(ASSESSMENT_EVALUATOR),
+        [
+            _addr(registry_address),
+            _addr(semantic_judge_address),
+        ],
+        {},
+        sender=OWNER,
+    )
 
     challenge_evaluator_address, _ = engine.deploy(
         str(CHALLENGE_EVALUATOR),
-        [challenge, registry],
+        [
+            _addr(challenge_address),
+            _addr(registry_address),
+            _addr(semantic_judge_address),
+            _addr(support_address),
+        ],
         {},
+        sender=OWNER,
+    )
+
+    _engine_call(
+        engine,
+        certificate_registry_address,
+        "configure_challenge",
+        [_addr(challenge_address)],
+        sender=OWNER,
+    )
+
+    _engine_call(
+        engine,
+        semantic_judge_address,
+        "configure_evaluators",
+        [
+            _addr(assessment_evaluator_address),
+            _addr(challenge_evaluator_address),
+        ],
         sender=OWNER,
     )
 
@@ -319,8 +407,10 @@ def _deploy_split(engine):
         registry_address,
         "configure_components",
         [
+            _addr(certificate_registry_address),
             _addr(assessment_evaluator_address),
-            challenge,
+            _addr(semantic_judge_address),
+            _addr(support_address),
         ],
         sender=OWNER,
     )
@@ -331,24 +421,44 @@ def _deploy_split(engine):
         "configure_evaluator",
         [
             _addr(challenge_evaluator_address),
+            _addr(semantic_judge_address),
+            _addr(support_address),
         ],
         sender=OWNER,
     )
 
     return {
+        "policy": policy_address,
         "registry": registry_address,
-        "assessment_evaluator": assessment_evaluator_address,
+        "certificate_registry":
+            certificate_registry_address,
+        "support": support_address,
         "challenge": challenge_address,
-        "challenge_evaluator": challenge_evaluator_address,
+        "semantic_judge": semantic_judge_address,
+        "assessment_evaluator":
+            assessment_evaluator_address,
+        "challenge_evaluator":
+            challenge_evaluator_address,
     }
 
 
-def _create_policy(engine, registry: str, manifest_raw: bytes) -> None:
-    valid_until = int(datetime.now(timezone.utc).timestamp()) + (10 * DAY)
+def _create_policy(
+    engine,
+    policy_registry: str,
+    manifest_raw: bytes,
+) -> None:
+    valid_until = (
+        int(
+            datetime.now(
+                timezone.utc
+            ).timestamp()
+        )
+        + (10 * DAY)
+    )
 
     _engine_call(
         engine,
-        registry,
+        policy_registry,
         "create_policy",
         [
             POLICY_ID,
@@ -358,7 +468,9 @@ def _create_policy(engine, registry: str, manifest_raw: bytes) -> None:
             MANIFEST_URL,
             MANIFEST_ID,
             MANIFEST_AUTHORITY,
-            hashlib.sha256(manifest_raw).hexdigest(),
+            hashlib.sha256(
+                manifest_raw
+            ).hexdigest(),
             valid_until,
             3600,
         ],
@@ -467,12 +579,12 @@ def test_split_evaluator_consensus_ast_is_identical_to_frozen_monolith():
     monolith_methods = _class_methods(MONOLITH, "AgentSeal")
 
     assessment_methods = _class_methods(
-        ASSESSMENT_EVALUATOR,
+        LEGACY_ASSESSMENT_EVALUATOR,
         "AgentSealAssessmentEvaluator",
     )
 
     challenge_methods = _class_methods(
-        CHALLENGE_EVALUATOR,
+        LEGACY_CHALLENGE_EVALUATOR,
         "AgentSealChallengeEvaluator",
     )
 
@@ -490,311 +602,764 @@ def test_split_evaluator_consensus_ast_is_identical_to_frozen_monolith():
         ), name
 
 
-def test_registry_direct_mode_component_smoke(direct_vm, direct_deploy):
-    registry = direct_deploy(str(REGISTRY))
+def test_policy_registry_direct_mode_component_smoke(
+    direct_vm,
+    direct_deploy,
+):
+    # R3 Registry requires an external PolicyRegistry Address.
+    # Direct Mode is deliberately single-contract here, so its
+    # root PolicyRegistry is the correct independent smoke target.
+    policy_registry = direct_deploy(
+        str(POLICY)
+    )
 
-    owner = registry.get_owner()
-    components = registry.get_components()
+    owner = policy_registry.get_owner()
+    policy_count = policy_registry.get_policy_count()
 
-    assert isinstance(owner, str)
-    assert owner.startswith("0x")
-    assert components["configured"] is False
-    assert components["assessment_evaluator"] == "0x" + ("00" * 20)
-    assert components["challenge_contract"] == "0x" + ("00" * 20)
+    assert isinstance(
+        owner,
+        str,
+    )
+
+    assert owner.startswith(
+        "0x"
+    )
+
+    assert policy_count == 0
 
 
 def test_split_glsim_component_wiring_and_one_time_configuration():
     with _sim_engine(
-        "agentseal-split-wiring-r2"
+        "agentseal-split-r17-r3-wiring"
     ) as engine:
-        addresses = _deploy_split(engine)
+        a = _deploy_split(
+            engine
+        )
 
-        registry_components = _engine_read(
+        registry = _engine_read(
             engine,
-            addresses["registry"],
+            a["registry"],
             "get_components",
         )
 
-        challenge_components = _engine_read(
+        certificate_registry = _engine_read(
             engine,
-            addresses["challenge"],
+            a[
+                "certificate_registry"
+            ],
             "get_components",
         )
 
-        assert registry_components["configured"] is True
-        assert registry_components["assessment_evaluator"].lower() == (
-            addresses["assessment_evaluator"].lower()
-        )
-        assert registry_components["challenge_contract"].lower() == (
-            addresses["challenge"].lower()
+        challenge = _engine_read(
+            engine,
+            a["challenge"],
+            "get_components",
         )
 
-        assert challenge_components["configured"] is True
-        assert challenge_components["registry"].lower() == (
-            addresses["registry"].lower()
-        )
-        assert challenge_components["challenge_evaluator"].lower() == (
-            addresses["challenge_evaluator"].lower()
+        judge = _engine_read(
+            engine,
+            a["semantic_judge"],
+            "get_components",
         )
 
-        with pytest.raises(Exception, match="COMPONENTS_ALREADY_CONFIGURED"):
+        support = _engine_read(
+            engine,
+            a["support"],
+            "get_components",
+        )
+
+        assessment_evaluator = _engine_read(
+            engine,
+            a[
+                "assessment_evaluator"
+            ],
+            "get_components",
+        )
+
+        challenge_evaluator = _engine_read(
+            engine,
+            a[
+                "challenge_evaluator"
+            ],
+            "get_components",
+        )
+
+        assert registry[
+            "configured"
+        ] is True
+
+        assert (
+            registry[
+                "policy_registry"
+            ].lower()
+            == a["policy"].lower()
+        )
+
+        assert (
+            registry[
+                "certificate_registry"
+            ].lower()
+            == a[
+                "certificate_registry"
+            ].lower()
+        )
+
+        assert (
+            registry[
+                "assessment_evaluator"
+            ].lower()
+            == a[
+                "assessment_evaluator"
+            ].lower()
+        )
+
+        assert (
+            registry[
+                "semantic_judge"
+            ].lower()
+            == a[
+                "semantic_judge"
+            ].lower()
+        )
+
+        assert (
+            registry[
+                "deterministic_support"
+            ].lower()
+            == a[
+                "support"
+            ].lower()
+        )
+
+        assert certificate_registry[
+            "configured"
+        ] is True
+
+        assert (
+            certificate_registry[
+                "registry"
+            ].lower()
+            == a[
+                "registry"
+            ].lower()
+        )
+
+        assert (
+            certificate_registry[
+                "policy_registry"
+            ].lower()
+            == a[
+                "policy"
+            ].lower()
+        )
+
+        assert (
+            certificate_registry[
+                "challenge_contract"
+            ].lower()
+            == a[
+                "challenge"
+            ].lower()
+        )
+
+        assert challenge[
+            "configured"
+        ] is True
+
+        assert (
+            challenge[
+                "certificate_registry"
+            ].lower()
+            == a[
+                "certificate_registry"
+            ].lower()
+        )
+
+        assert (
+            challenge[
+                "challenge_evaluator"
+            ].lower()
+            == a[
+                "challenge_evaluator"
+            ].lower()
+        )
+
+        assert (
+            challenge[
+                "semantic_judge"
+            ].lower()
+            == a[
+                "semantic_judge"
+            ].lower()
+        )
+
+        assert (
+            challenge[
+                "deterministic_support"
+            ].lower()
+            == a[
+                "support"
+            ].lower()
+        )
+
+        assert judge[
+            "configured"
+        ] is True
+
+        assert (
+            judge[
+                "registry"
+            ].lower()
+            == a[
+                "registry"
+            ].lower()
+        )
+
+        assert (
+            judge[
+                "challenge_contract"
+            ].lower()
+            == a[
+                "challenge"
+            ].lower()
+        )
+
+        assert (
+            judge[
+                "assessment_evaluator"
+            ].lower()
+            == a[
+                "assessment_evaluator"
+            ].lower()
+        )
+
+        assert (
+            judge[
+                "challenge_evaluator"
+            ].lower()
+            == a[
+                "challenge_evaluator"
+            ].lower()
+        )
+
+        assert (
+            support[
+                "certificate_registry"
+            ].lower()
+            == a[
+                "certificate_registry"
+            ].lower()
+        )
+
+        assert (
+            assessment_evaluator[
+                "registry"
+            ].lower()
+            == a[
+                "registry"
+            ].lower()
+        )
+
+        assert (
+            assessment_evaluator[
+                "semantic_judge"
+            ].lower()
+            == a[
+                "semantic_judge"
+            ].lower()
+        )
+
+        assert (
+            challenge_evaluator[
+                "challenge_contract"
+            ].lower()
+            == a[
+                "challenge"
+            ].lower()
+        )
+
+        assert (
+            challenge_evaluator[
+                "registry"
+            ].lower()
+            == a[
+                "registry"
+            ].lower()
+        )
+
+        assert (
+            challenge_evaluator[
+                "semantic_judge"
+            ].lower()
+            == a[
+                "semantic_judge"
+            ].lower()
+        )
+
+        assert (
+            challenge_evaluator[
+                "deterministic_support"
+            ].lower()
+            == a[
+                "support"
+            ].lower()
+        )
+
+        with pytest.raises(
+            Exception,
+            match=(
+                "COMPONENTS_ALREADY_CONFIGURED"
+            ),
+        ):
             _engine_call(
                 engine,
-                addresses["registry"],
+                a["registry"],
                 "configure_components",
                 [
-                    _addr(addresses["assessment_evaluator"]),
-                    _addr(addresses["challenge"]),
+                    _addr(
+                        a[
+                            "certificate_registry"
+                        ]
+                    ),
+                    _addr(
+                        a[
+                            "assessment_evaluator"
+                        ]
+                    ),
+                    _addr(
+                        a[
+                            "semantic_judge"
+                        ]
+                    ),
+                    _addr(
+                        a[
+                            "support"
+                        ]
+                    ),
                 ],
                 sender=OWNER,
             )
 
-        with pytest.raises(Exception, match="CHALLENGE_EVALUATOR_ALREADY_CONFIGURED"):
+        with pytest.raises(
+            Exception,
+            match=(
+                "CHALLENGE_CONTRACT_ALREADY_CONFIGURED"
+            ),
+        ):
             _engine_call(
                 engine,
-                addresses["challenge"],
+                a[
+                    "certificate_registry"
+                ],
+                "configure_challenge",
+                [
+                    _addr(
+                        a[
+                            "challenge"
+                        ]
+                    )
+                ],
+                sender=OWNER,
+            )
+
+        with pytest.raises(
+            Exception,
+            match=(
+                "EVALUATORS_ALREADY_CONFIGURED"
+            ),
+        ):
+            _engine_call(
+                engine,
+                a[
+                    "semantic_judge"
+                ],
+                "configure_evaluators",
+                [
+                    _addr(
+                        a[
+                            "assessment_evaluator"
+                        ]
+                    ),
+                    _addr(
+                        a[
+                            "challenge_evaluator"
+                        ]
+                    ),
+                ],
+                sender=OWNER,
+            )
+
+        with pytest.raises(
+            Exception,
+            match=(
+                "CHALLENGE_EVALUATOR_ALREADY_CONFIGURED"
+            ),
+        ):
+            _engine_call(
+                engine,
+                a[
+                    "challenge"
+                ],
                 "configure_evaluator",
-                [_addr(addresses["challenge_evaluator"])],
+                [
+                    _addr(
+                        a[
+                            "challenge_evaluator"
+                        ]
+                    ),
+                    _addr(
+                        a[
+                            "semantic_judge"
+                        ]
+                    ),
+                    _addr(
+                        a[
+                            "support"
+                        ]
+                    ),
+                ],
                 sender=OWNER,
             )
 
 
 def test_split_glsim_stable_drift_fail_end_to_end_parity():
-    manifest_raw = _canonical_bytes(_manifest_payload())
-    harness = SemanticHarness(manifest_raw)
+    manifest_raw = _canonical_bytes(
+        _manifest_payload()
+    )
+
+    harness = SemanticHarness(
+        manifest_raw
+    )
 
     with _sim_engine(
-        "agentseal-split-lifecycle-r2",
+        "agentseal-split-r17-r3-lifecycle",
         harness,
     ) as engine:
-        addresses = _deploy_split(engine)
-        registry = addresses["registry"]
-        challenge = addresses["challenge"]
+        a = _deploy_split(
+            engine
+        )
 
         _create_policy(
             engine,
-            registry,
+            a["policy"],
             manifest_raw,
         )
 
-        # Stable assessment -> PASS -> active certificate.
-        stable_assessment_id = _create_assessment(
+        stable_id = _create_assessment(
             engine,
-            registry,
+            a["registry"],
             PROFILE_STABLE,
         )
-        assert stable_assessment_id == 1
+
+        assert stable_id == 1
 
         stable_steps = _evaluate_assessment(
             engine,
-            registry,
-            stable_assessment_id,
+            a["registry"],
+            stable_id,
             harness,
             "PASS",
         )
-        assert stable_steps >= 1
+
+        assert stable_steps >= 4
 
         stable_assessment = _engine_read(
             engine,
-            registry,
+            a["registry"],
             "get_assessment",
-            [stable_assessment_id],
+            [stable_id],
         )
+
         stable_certificate = _engine_read(
             engine,
-            registry,
+            a[
+                "certificate_registry"
+            ],
             "get_certificate",
-            [stable_assessment_id],
+            [stable_id],
         )
 
-        assert stable_assessment["status"] == "PASSED"
-        assert stable_assessment["attempt_count"] == 1
-        assert stable_certificate["status"] == "ACTIVE"
-        assert stable_certificate["effective_status"] == "ACTIVE"
-        assert stable_certificate["certificate_id"] == stable_assessment_id
+        assert stable_assessment[
+            "status"
+        ] == "PASSED"
 
-        # Stable challenge -> semantic PASS -> challenge REJECTED.
+        assert stable_assessment[
+            "attempt_count"
+        ] == 1
+
+        assert stable_assessment[
+            "certificate_delivery_pending"
+        ] is False
+
+        assert stable_certificate[
+            "status"
+        ] == "ACTIVE"
+
+        assert stable_certificate[
+            "effective_status"
+        ] == "ACTIVE"
+
         stable_challenge_id = _open_challenge(
             engine,
-            challenge,
-            stable_assessment_id,
+            a["challenge"],
+            stable_id,
         )
+
         assert stable_challenge_id == 1
 
         stable_challenge_steps = _evaluate_challenge(
             engine,
-            registry,
-            challenge,
+            a["registry"],
+            a["challenge"],
             stable_challenge_id,
             harness,
             "PASS",
         )
-        assert stable_challenge_steps >= 1
+
+        assert stable_challenge_steps >= 2
 
         stable_challenge = _engine_read(
             engine,
-            challenge,
+            a["challenge"],
             "get_challenge",
             [stable_challenge_id],
         )
-        stable_certificate_after_challenge = _engine_read(
+
+        stable_certificate_after = _engine_read(
             engine,
-            registry,
+            a[
+                "certificate_registry"
+            ],
             "get_certificate",
-            [stable_assessment_id],
+            [stable_id],
         )
 
-        assert stable_challenge["status"] == "REJECTED"
-        assert stable_challenge["attempt_count"] == 1
-        assert stable_certificate_after_challenge["status"] == "ACTIVE"
-        assert stable_certificate_after_challenge["effective_status"] == "ACTIVE"
+        assert stable_challenge[
+            "status"
+        ] == "REJECTED"
 
-        # Direct subject revocation retains original monolith consequence.
+        assert stable_challenge[
+            "attempt_count"
+        ] == 1
+
+        assert stable_certificate_after[
+            "status"
+        ] == "ACTIVE"
+
         _engine_call(
             engine,
-            registry,
+            a[
+                "certificate_registry"
+            ],
             "revoke_certificate",
-            [stable_assessment_id],
+            [stable_id],
             sender=SUBJECT,
         )
-        _drain_messages(engine, registry)
+
+        _drain_messages(
+            engine,
+            a["registry"],
+        )
 
         stable_revocation = _engine_read(
             engine,
-            registry,
+            a[
+                "certificate_registry"
+            ],
             "get_revocation",
-            [stable_assessment_id],
+            [stable_id],
         )
+
         stable_certificate_revoked = _engine_read(
             engine,
-            registry,
+            a[
+                "certificate_registry"
+            ],
             "get_certificate",
-            [stable_assessment_id],
+            [stable_id],
         )
 
-        assert stable_certificate_revoked["status"] == "REVOKED"
-        assert stable_revocation["source"] == "SUBJECT_SELF_REVOKE"
-        assert stable_revocation["initiator"].lower() == SUBJECT.lower()
+        assert stable_certificate_revoked[
+            "status"
+        ] == "REVOKED"
 
-        # Drift assessment -> PASS -> active certificate.
-        drift_assessment_id = _create_assessment(
+        assert stable_revocation[
+            "source"
+        ] == "SUBJECT_SELF_REVOKE"
+
+        assert (
+            stable_revocation[
+                "initiator"
+            ].lower()
+            == SUBJECT.lower()
+        )
+
+        drift_id = _create_assessment(
             engine,
-            registry,
+            a["registry"],
             PROFILE_DRIFT,
         )
-        assert drift_assessment_id == 2
+
+        assert drift_id == 2
 
         _evaluate_assessment(
             engine,
-            registry,
-            drift_assessment_id,
+            a["registry"],
+            drift_id,
             harness,
             "PASS",
         )
 
         drift_assessment = _engine_read(
             engine,
-            registry,
+            a["registry"],
             "get_assessment",
-            [drift_assessment_id],
+            [drift_id],
         )
+
         drift_certificate = _engine_read(
             engine,
-            registry,
+            a[
+                "certificate_registry"
+            ],
             "get_certificate",
-            [drift_assessment_id],
+            [drift_id],
         )
 
-        assert drift_assessment["status"] == "PASSED"
-        assert drift_certificate["status"] == "ACTIVE"
-        assert drift_certificate["effective_status"] == "ACTIVE"
+        assert drift_assessment[
+            "status"
+        ] == "PASSED"
 
-        # Drift challenge -> semantic FAIL -> UPHELD -> challenge consensus revocation.
+        assert drift_certificate[
+            "status"
+        ] == "ACTIVE"
+
         drift_challenge_id = _open_challenge(
             engine,
-            challenge,
-            drift_assessment_id,
+            a["challenge"],
+            drift_id,
         )
+
         assert drift_challenge_id == 2
 
-        drift_challenge_steps = _evaluate_challenge(
+        drift_steps = _evaluate_challenge(
             engine,
-            registry,
-            challenge,
+            a["registry"],
+            a["challenge"],
             drift_challenge_id,
             harness,
             "FAIL",
         )
-        # callback -> registry revocation -> acknowledgment requires multiple pumps.
-        assert drift_challenge_steps >= 3
+
+        assert drift_steps >= 4
 
         drift_challenge = _engine_read(
             engine,
-            challenge,
+            a["challenge"],
             "get_challenge",
             [drift_challenge_id],
         )
+
         drift_revocation = _engine_read(
             engine,
-            registry,
+            a[
+                "certificate_registry"
+            ],
             "get_revocation",
-            [drift_assessment_id],
+            [drift_id],
         )
-        drift_certificate_revoked = _engine_read(
+
+        drift_certificate_after = _engine_read(
             engine,
-            registry,
+            a[
+                "certificate_registry"
+            ],
             "get_certificate",
-            [drift_assessment_id],
+            [drift_id],
         )
+
         delivery_pending = _engine_read(
             engine,
-            challenge,
+            a["challenge"],
             "get_revocation_delivery_pending",
             [drift_challenge_id],
         )
 
-        assert drift_challenge["status"] == "UPHELD"
-        assert drift_certificate_revoked["status"] == "REVOKED"
-        assert drift_revocation["source"] == "CHALLENGE_CONSENSUS"
-        assert drift_revocation["challenge_id"] == drift_challenge_id
-        assert drift_revocation["initiator"].lower() == EVALUATION_CALLER.lower()
+        assert drift_challenge[
+            "status"
+        ] == "UPHELD"
+
+        assert drift_certificate_after[
+            "status"
+        ] == "REVOKED"
+
+        assert drift_revocation[
+            "source"
+        ] == "CHALLENGE_CONSENSUS"
+
+        assert drift_revocation[
+            "challenge_id"
+        ] == drift_challenge_id
+
+        assert (
+            drift_revocation[
+                "initiator"
+            ].lower()
+            == EVALUATION_CALLER.lower()
+        )
+
         assert delivery_pending is False
 
-        # Fail assessment -> FAIL -> terminal, no certificate.
-        fail_assessment_id = _create_assessment(
+        fail_id = _create_assessment(
             engine,
-            registry,
+            a["registry"],
             PROFILE_FAIL,
         )
-        assert fail_assessment_id == 3
+
+        assert fail_id == 3
 
         _evaluate_assessment(
             engine,
-            registry,
-            fail_assessment_id,
+            a["registry"],
+            fail_id,
             harness,
             "FAIL",
         )
 
         fail_assessment = _engine_read(
             engine,
-            registry,
+            a["registry"],
             "get_assessment",
-            [fail_assessment_id],
+            [fail_id],
         )
+
         fail_certificate_exists = _engine_read(
             engine,
-            registry,
+            a[
+                "certificate_registry"
+            ],
             "certificate_exists",
-            [fail_assessment_id],
+            [fail_id],
         )
 
-        assert fail_assessment["status"] == "FAILED"
-        assert fail_assessment["attempt_count"] == 1
+        assert fail_assessment[
+            "status"
+        ] == "FAILED"
+
+        assert fail_assessment[
+            "attempt_count"
+        ] == 1
+
         assert fail_certificate_exists is False
 
-        assert len(harness.endpoint_requests) == 5
-        assert len(harness.llm_events) == 5
+        assert len(
+            harness.endpoint_requests
+        ) == 5
+
+        assert len(
+            harness.llm_events
+        ) == 5
+
         assert not engine._post_queue
 
 
