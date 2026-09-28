@@ -124,10 +124,7 @@ class AgentSealDeterministicSupport(gl.Contract):
             return {'state': 'EXPIRED', 'payload': ''}
         if verdict != 'PASS':
             return {'state': 'OK', 'payload': ''}
-        expires_at = now + requested_certificate_ttl
-        if expires_at > int(policy['valid_until']):
-            expires_at = int(policy['valid_until'])
-        payload = self._canonical_json({'certificate_id': assessment_id, 'assessment_id': assessment_id, 'subject_wallet': subject_wallet.as_hex.lower(), 'profile_digest': profile_digest, 'endpoint': endpoint, 'capability_id': capability_id, 'policy_id': policy_id, 'policy_version': policy_version, 'manifest_id': manifest_id, 'manifest_digest': manifest_digest, 'case_a_id': case_a_id, 'case_b_id': case_b_id, 'binding_key': binding_key, 'issued_at': now, 'expires_at': expires_at})
+        payload = self._canonical_json({'certificate_id': assessment_id, 'assessment_id': assessment_id, 'subject_wallet': subject_wallet.as_hex.lower(), 'profile_digest': profile_digest, 'endpoint': endpoint, 'capability_id': capability_id, 'policy_id': policy_id, 'policy_version': policy_version, 'manifest_id': manifest_id, 'manifest_digest': manifest_digest, 'case_a_id': case_a_id, 'case_b_id': case_b_id, 'binding_key': binding_key, 'requested_certificate_ttl': requested_certificate_ttl})
         return {'state': 'OK', 'payload': payload}
 
     @gl.public.view

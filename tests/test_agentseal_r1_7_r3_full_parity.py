@@ -27,11 +27,11 @@ ASSESSMENT_EVALUATOR = R3 / "agentseal_assessment_evidence_evaluator.py"
 CHALLENGE_EVALUATOR = R3 / "agentseal_challenge_evidence_evaluator.py"
 
 EXPECTED_SHA256 = {
-    ASSESSMENT_EVALUATOR: "07e2c5ba44c90f2236c58b87da88c0263b1995e38b634172b2fdee1172c2bbbf",
-    CERTIFICATE_REGISTRY: "d6cfa80f8a7228e4c05cbbf35f01e484049a7404b2e872cc5f9ae9b386ce107f",
+    ASSESSMENT_EVALUATOR: "1c3e2c16b18636c5261b87b107abf4b5452363089e175ca3fbaa5c357da6e52c",
+    CERTIFICATE_REGISTRY: "9ec3d55a8e142ef371a13e8e46e1f3c179bc48da40e2e033a7da73a7cdffe583",
     CHALLENGE: "6b63365669d6288fc6df712767e14647a62fc12e17759f9e46746a8a27c3c026",
-    CHALLENGE_EVALUATOR: "af6844036f705ec2380f560633aab679bbaf4d0cdcb14b5ac4c7c472fcb99037",
-    SUPPORT: "cbe6b49a5523630a1426eb92dc14b5550875058cd8cb292bdf472ddaa59ce5ca",
+    CHALLENGE_EVALUATOR: "510a0639ca061d47a9d8c2f02d4807e9037859f568105be70f9d0af15cc4ac0b",
+    SUPPORT: "d1de52f8900ffa98cd2f5178f76de0b792d31f0e3e97e611a565c0781be3c71c",
     POLICY: "da593bf8276c1603c2ca1af2933057eef59cd80eeef72e0d5682f3dc0e755240",
     REGISTRY: "885ce68a6e547a71e29b8ff5549061909a6830a98bcaebe49db7cc93cde0b4e2",
     SEMANTIC_JUDGE: "28b1d33d5ca52613b7d033258b84e1c6128542c2f23a9ca617554e0313084ee2",
@@ -449,6 +449,11 @@ def _evaluate_challenge(
 
 
 def _certificate_payload(certificate: dict) -> str:
+    requested_certificate_ttl = (
+        int(certificate["expires_at"])
+        - int(certificate["issued_at"])
+    )
+    assert requested_certificate_ttl >= 1
     payload = {
         "certificate_id": certificate["certificate_id"],
         "assessment_id": certificate["assessment_id"],
@@ -463,8 +468,7 @@ def _certificate_payload(certificate: dict) -> str:
         "case_a_id": certificate["case_a_id"],
         "case_b_id": certificate["case_b_id"],
         "binding_key": certificate["binding_key"],
-        "issued_at": certificate["issued_at"],
-        "expires_at": certificate["expires_at"],
+        "requested_certificate_ttl": requested_certificate_ttl,
     }
     return json.dumps(
         payload,

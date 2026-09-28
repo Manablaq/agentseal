@@ -47,17 +47,17 @@ EXPECTED_SHA256 = {
     REGISTRY:
         "885ce68a6e547a71e29b8ff5549061909a6830a98bcaebe49db7cc93cde0b4e2",
     CERTIFICATE_REGISTRY:
-        "d6cfa80f8a7228e4c05cbbf35f01e484049a7404b2e872cc5f9ae9b386ce107f",
+        "9ec3d55a8e142ef371a13e8e46e1f3c179bc48da40e2e033a7da73a7cdffe583",
     SUPPORT:
-        "cbe6b49a5523630a1426eb92dc14b5550875058cd8cb292bdf472ddaa59ce5ca",
+        "d1de52f8900ffa98cd2f5178f76de0b792d31f0e3e97e611a565c0781be3c71c",
     CHALLENGE:
         "6b63365669d6288fc6df712767e14647a62fc12e17759f9e46746a8a27c3c026",
     SEMANTIC_JUDGE:
         "28b1d33d5ca52613b7d033258b84e1c6128542c2f23a9ca617554e0313084ee2",
     ASSESSMENT_EVALUATOR:
-        "07e2c5ba44c90f2236c58b87da88c0263b1995e38b634172b2fdee1172c2bbbf",
+        "1c3e2c16b18636c5261b87b107abf4b5452363089e175ca3fbaa5c357da6e52c",
     CHALLENGE_EVALUATOR:
-        "af6844036f705ec2380f560633aab679bbaf4d0cdcb14b5ac4c7c472fcb99037",
+        "510a0639ca061d47a9d8c2f02d4807e9037859f568105be70f9d0af15cc4ac0b",
 }
 
 OWNER = "0x" + "11" * 20
@@ -1492,3 +1492,117 @@ def test_split_challenge_initiator_capture_is_request_bound():
         assert len(calls) == 1
         assert len(calls[0].args) >= 3
         assert is_map(calls[0].args[2])
+
+
+def test_split_certificate_ttl_starts_at_actual_issuance_after_finalized_delivery_delay():
+    manifest_raw = _canonical_bytes(
+        _manifest_payload()
+    )
+    harness = SemanticHarness(
+        manifest_raw
+    )
+
+    with _sim_engine(
+        "agentseal-split-r17-r3-ttl-finality-delay",
+        harness,
+    ) as engine:
+        a = _deploy_split(
+            engine
+        )
+        _create_policy(
+            engine,
+            a["policy"],
+            manifest_raw,
+        )
+        assessment_id = _create_assessment(
+            engine,
+            a["registry"],
+            PROFILE_STABLE,
+        )
+
+        harness.verdict = "PASS"
+        _engine_call(
+            engine,
+            a["registry"],
+            "evaluate_assessment",
+            [assessment_id],
+            sender=SUBJECT,
+        )
+
+        # The top-level evaluate_assessment call already drains exactly one
+        # queued PostMessage (the assessment evaluator). Therefore the queue
+        # now starts at judge_assessment. Drain only judge + registry apply,
+        # and prove that issue_certificate is still pending before the warp.
+        assert len(engine._post_queue) == 1
+        assert engine._post_queue[0]["method"] == "judge_assessment"
+
+        for expected_method in (
+            "judge_assessment",
+            "apply_assessment_evaluation_result",
+        ):
+            assert len(engine._post_queue) == 1
+            assert engine._post_queue[0]["method"] == expected_method
+            _engine_read(
+                engine,
+                a["registry"],
+                "get_owner",
+            )
+
+        assert len(engine._post_queue) == 1
+        assert engine._post_queue[0]["method"] == "issue_certificate"
+
+        current = datetime.fromisoformat(
+            engine.vm._datetime.replace(
+                "Z",
+                "+00:00",
+            )
+        )
+        delayed_issue_epoch = (
+            int(current.timestamp())
+            + 1200
+        )
+        engine.vm.warp(
+            datetime.fromtimestamp(
+                delayed_issue_epoch,
+                timezone.utc,
+            ).isoformat().replace(
+                "+00:00",
+                "Z",
+            )
+        )
+
+        # Drain certificate issuance and its registry acknowledgement.
+        # GLSim may drain both finalized messages during one harmless read,
+        # so the regression must verify the final state rather than assume
+        # a scheduler-specific intermediate queue length.
+        issuance_steps = _drain_messages(
+            engine,
+            a["registry"],
+        )
+        assert issuance_steps >= 1
+        assert not engine._post_queue
+
+        assessment = _engine_read(
+            engine,
+            a["registry"],
+            "get_assessment",
+            [assessment_id],
+        )
+        certificate = _engine_read(
+            engine,
+            a["certificate_registry"],
+            "get_certificate",
+            [assessment_id],
+        )
+
+        assert assessment["status"] == "PASSED"
+        assert assessment["certificate_delivery_pending"] is False
+        assert certificate["status"] == "ACTIVE"
+        assert certificate["effective_status"] == "ACTIVE"
+        assert certificate["issued_at"] == delayed_issue_epoch
+        assert certificate["expires_at"] == delayed_issue_epoch + 900
+        assert (
+            certificate["expires_at"]
+            - certificate["issued_at"]
+        ) == 900
+

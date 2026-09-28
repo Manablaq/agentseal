@@ -85,31 +85,42 @@ class AgentSealCertificateRegistry(gl.Contract):
             raise gl.vm.UserError('REGISTRY_REQUIRED')
         try:
             p = json.loads(payload_json)
-            expected = {'certificate_id', 'assessment_id', 'subject_wallet', 'profile_digest', 'endpoint', 'capability_id', 'policy_id', 'policy_version', 'manifest_id', 'manifest_digest', 'case_a_id', 'case_b_id', 'binding_key', 'issued_at', 'expires_at'}
+            expected = {'certificate_id', 'assessment_id', 'subject_wallet', 'profile_digest', 'endpoint', 'capability_id', 'policy_id', 'policy_version', 'manifest_id', 'manifest_digest', 'case_a_id', 'case_b_id', 'binding_key', 'requested_certificate_ttl'}
             if type(p) is not dict or set(p.keys()) != expected:
                 raise gl.vm.UserError('shape')
             certificate_id = int(p['certificate_id'])
             assessment_id = int(p['assessment_id'])
             policy_version = int(p['policy_version'])
-            issued_at = int(p['issued_at'])
-            expires_at = int(p['expires_at'])
+            requested_certificate_ttl = int(p['requested_certificate_ttl'])
             subject_wallet = Address(p['subject_wallet'])
             if certificate_id < 1 or assessment_id != certificate_id:
                 raise gl.vm.UserError('id')
-            if issued_at < 1 or expires_at <= issued_at:
-                raise gl.vm.UserError('time')
+            if requested_certificate_ttl < 1:
+                raise gl.vm.UserError('ttl')
         except Exception as exc:
             raise gl.vm.UserError('CERTIFICATE_PAYLOAD_INVALID') from exc
+        policy = gl.get_contract_at(self.policy_registry).view().get_policy(p['policy_id'], policy_version)
+        if p['capability_id'] != policy['capability_id'] or p['policy_id'] != policy['policy_id'] or policy_version != int(policy['version']) or p['manifest_id'] != policy['manifest_id'] or p['manifest_digest'] != policy['manifest_digest']:
+            raise gl.vm.UserError('CERTIFICATE_POLICY_SNAPSHOT_MISMATCH')
+        if requested_certificate_ttl > int(policy['max_certificate_ttl']):
+            raise gl.vm.UserError('CERTIFICATE_TTL_POLICY_RANGE')
         key = self._certificate_key(certificate_id)
         if key in self.certificates:
             existing = self.certificates[key]
-            if int(existing.assessment_id) != assessment_id or existing.subject_wallet != subject_wallet or existing.profile_digest != p['profile_digest'] or (existing.endpoint != p['endpoint']) or (existing.capability_id != p['capability_id']) or (existing.policy_id != p['policy_id']) or (int(existing.policy_version) != policy_version) or (existing.manifest_id != p['manifest_id']) or (existing.manifest_digest != p['manifest_digest']) or (existing.case_a_id != p['case_a_id']) or (existing.case_b_id != p['case_b_id']) or (existing.binding_key != p['binding_key']) or (int(existing.issued_at) != issued_at) or (int(existing.expires_at) != expires_at):
+            expected_expires_at = int(existing.issued_at) + requested_certificate_ttl
+            if expected_expires_at > int(policy['valid_until']):
+                expected_expires_at = int(policy['valid_until'])
+            if int(existing.assessment_id) != assessment_id or existing.subject_wallet != subject_wallet or existing.profile_digest != p['profile_digest'] or (existing.endpoint != p['endpoint']) or (existing.capability_id != p['capability_id']) or (existing.policy_id != p['policy_id']) or (int(existing.policy_version) != policy_version) or (existing.manifest_id != p['manifest_id']) or (existing.manifest_digest != p['manifest_digest']) or (existing.case_a_id != p['case_a_id']) or (existing.case_b_id != p['case_b_id']) or (existing.binding_key != p['binding_key']) or (int(existing.expires_at) != expected_expires_at):
                 raise gl.vm.UserError('CERTIFICATE_RECORD_CONFLICT')
             gl.get_contract_at(self.registry).emit(on='finalized').acknowledge_certificate_issuance(assessment_id, certificate_id, existing.binding_key)
             return
         now = self._now()
         self._reconcile_active_certificate(p['binding_key'], now)
-        status = 'ACTIVE' if now < expires_at else 'EXPIRED'
+        issued_at = now
+        expires_at = issued_at + requested_certificate_ttl
+        if expires_at > int(policy['valid_until']):
+            expires_at = int(policy['valid_until'])
+        status = 'ACTIVE' if issued_at < expires_at else 'EXPIRED'
         self.certificates[key] = CertificateRecord(certificate_id=u256(certificate_id), assessment_id=u256(assessment_id), subject_wallet=subject_wallet, profile_digest=p['profile_digest'], endpoint=p['endpoint'], capability_id=p['capability_id'], policy_id=p['policy_id'], policy_version=u64(policy_version), manifest_id=p['manifest_id'], manifest_digest=p['manifest_digest'], case_a_id=p['case_a_id'], case_b_id=p['case_b_id'], binding_key=p['binding_key'], status=status, issued_at=u64(issued_at), expires_at=u64(expires_at))
         if status == 'ACTIVE':
             self.active_certificate_by_binding[p['binding_key']] = u256(certificate_id)

@@ -16,6 +16,44 @@ MAX_RESULT_OUTPUT_BYTES = 8192
 MANIFEST_SCHEMA = 'agentseal-manifest-v1'
 EVALUATION_PROTOCOL = 'agentseal-evaluation-v1'
 
+def _consensus_web_request(url: str, method: str='GET', headers: dict|None=None, body: bytes=b'') -> dict:
+    request_headers = headers or {}
+
+    def leader_fn() -> dict:
+        try:
+            if method == 'GET':
+                response = gl.nondet.web.get(url)
+            else:
+                response = gl.nondet.web.request(url, method=method, headers=request_headers, body=body)
+            if int(response.status) != 200 or not isinstance(response.body, (bytes, bytearray)):
+                return {'ok': False, 'body_hex': ''}
+            return {'ok': True, 'body_hex': bytes(response.body).hex()}
+        except Exception:
+            return {'ok': False, 'body_hex': ''}
+
+    def validator_fn(leader_result: object) -> bool:
+        if not isinstance(leader_result, gl.vm.Return):
+            return False
+        try:
+            if method == 'GET':
+                response = gl.nondet.web.get(url)
+            else:
+                response = gl.nondet.web.request(url, method=method, headers=request_headers, body=body)
+            if int(response.status) != 200 or not isinstance(response.body, (bytes, bytearray)):
+                validator_payload = {'ok': False, 'body_hex': ''}
+            else:
+                validator_payload = {'ok': True, 'body_hex': bytes(response.body).hex()}
+        except Exception:
+            validator_payload = {'ok': False, 'body_hex': ''}
+        leader_payload = leader_result.calldata
+        return type(leader_payload) is dict and type(validator_payload) is dict and validator_payload == leader_payload
+
+    result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+    if type(result) is not dict or set(result.keys()) != {'ok', 'body_hex'}:
+        raise gl.vm.UserError('WEB_EVIDENCE_CONSENSUS_INVALID')
+    return result
+
+
 @allow_storage
 @dataclass
 class PolicyRecord:
@@ -81,12 +119,13 @@ class AgentSealChallengeEvidenceEvaluator(gl.Contract):
     def _forced(self, verdict: str, case_a_id: str='', case_b_id: str='') -> dict:
         return {'mode': 'FORCED', 'forced_verdict': verdict, 'case_a_id': case_a_id, 'case_b_id': case_b_id, 'selected_cases': [], 'normalized_results': [], 'evaluation_id': ''}
 
-    def _evidence_once(self, policy: PolicyRecord, assessment: AssessmentRecord, manifest_digest: str, endpoint: str, selection_material: str, evaluation_id: str) -> dict:
+
+    def _evidence_consensus(self, policy: PolicyRecord, assessment: AssessmentRecord, manifest_digest: str, endpoint: str, selection_material: str, evaluation_id: str) -> dict:
+        manifest_result = _consensus_web_request(str(policy.manifest_url), 'GET')
+        if not bool(manifest_result['ok']):
+            return self._forced('INCONCLUSIVE')
         try:
-            response = gl.nondet.web.get(policy.manifest_url)
-            if int(response.status) != 200 or not isinstance(response.body, (bytes, bytearray)):
-                return self._forced('INCONCLUSIVE')
-            raw = bytes(response.body)
+            raw = bytes.fromhex(manifest_result['body_hex'])
         except Exception:
             return self._forced('INCONCLUSIVE')
         if len(raw) < 1 or len(raw) > MAX_MANIFEST_RESPONSE_BYTES:
@@ -99,6 +138,7 @@ class AgentSealChallengeEvidenceEvaluator(gl.Contract):
             a, b = self._select_case_indexes(selection_material, len(cases))
         except Exception:
             return self._forced('INCONCLUSIVE')
+
         selected = [cases[a], cases[b]]
         case_a_id = selected[0]['case_id']
         case_b_id = selected[1]['case_id']
@@ -106,11 +146,12 @@ class AgentSealChallengeEvidenceEvaluator(gl.Contract):
             request = self._build_endpoint_request(assessment, evaluation_id, selected)
         except Exception:
             return self._forced('INCONCLUSIVE', case_a_id, case_b_id)
+
+        endpoint_result = _consensus_web_request(str(endpoint), 'POST', {'content-type': 'application/json'}, request)
+        if not bool(endpoint_result['ok']):
+            return self._forced('INCONCLUSIVE', case_a_id, case_b_id)
         try:
-            response = gl.nondet.web.request(endpoint, method='POST', headers={'content-type': 'application/json'}, body=request)
-            if int(response.status) != 200 or not isinstance(response.body, (bytes, bytearray)):
-                return self._forced('INCONCLUSIVE', case_a_id, case_b_id)
-            endpoint_raw = bytes(response.body)
+            endpoint_raw = bytes.fromhex(endpoint_result['body_hex'])
         except Exception:
             return self._forced('INCONCLUSIVE', case_a_id, case_b_id)
         if len(endpoint_raw) < 1 or len(endpoint_raw) > MAX_ENDPOINT_RESPONSE_BYTES:
@@ -120,22 +161,6 @@ class AgentSealChallengeEvidenceEvaluator(gl.Contract):
         except Exception:
             return self._forced('FAIL', case_a_id, case_b_id)
         return {'mode': 'EVALUATE', 'forced_verdict': '', 'case_a_id': case_a_id, 'case_b_id': case_b_id, 'selected_cases': selected, 'normalized_results': normalized, 'evaluation_id': evaluation_id}
-
-    def _evidence_consensus(self, policy: PolicyRecord, assessment: AssessmentRecord, manifest_digest: str, endpoint: str, selection_material: str, evaluation_id: str) -> dict:
-
-        def leader_fn() -> dict:
-            return self._evidence_once(policy, assessment, manifest_digest, endpoint, selection_material, evaluation_id)
-
-        def validator_fn(leader_result: object) -> bool:
-            if not isinstance(leader_result, gl.vm.Return):
-                return False
-            leader_payload = leader_result.calldata
-            validator_payload = self._evidence_once(policy, assessment, manifest_digest, endpoint, selection_material, evaluation_id)
-            return type(leader_payload) is dict and type(validator_payload) is dict and (validator_payload == leader_payload)
-        result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
-        if type(result) is not dict or set(result.keys()) != {'mode', 'forced_verdict', 'case_a_id', 'case_b_id', 'selected_cases', 'normalized_results', 'evaluation_id'}:
-            raise gl.vm.UserError('CHALLENGE_EVIDENCE_CONSENSUS_INVALID')
-        return result
 
     @gl.public.write
     def evaluate_challenge(self, snapshot_json: str, attempt_number: int, request_nonce: int) -> None:
