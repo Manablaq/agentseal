@@ -27,7 +27,9 @@ The workbench also includes an injected EIP-1193 wallet transport. On explicit u
 
 Assessment and challenge flows now expose deterministic transaction previews for the exact certified targets and methods. Preparing a preview does not sign or submit anything. A separate acknowledgement checkbox and intent-confirmation action are required, and even confirmed intent remains execution-locked in this phase.
 
-No `writeContract` call is wired to the product surface yet. Transaction submission is added only after the preview/confirmation boundary is certified and a real Bradbury write is separately authorized.
+The frontend now contains the exact `writeContract` + `FINALIZED` receipt path and requires `FINISHED_WITH_RETURN` before reporting success. That execution path is double-locked: the module-level Bradbury write flag is `false`, and the product submit button is disabled while the lock is closed.
+
+No live write is authorized by this source state. Unlocking the Bradbury submission path requires a separate code change after explicit blockchain-write authorization; connecting a wallet or confirming transaction intent cannot submit by itself.
 
 ## Run locally
 

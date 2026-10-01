@@ -20,6 +20,10 @@ import {
   buildChallengeTransactionPreview,
   type AgentSealTransactionPreview,
 } from "@/lib/genlayer-transaction-preview";
+import {
+  executeConfirmedBradburyTransaction,
+  isLiveBradburyWriteUnlocked,
+} from "@/lib/genlayer-write-execution";
 
 type Mode = keyof typeof PRODUCT_ACTIONS;
 
@@ -119,7 +123,12 @@ export default function AgentSealLanding() {
   const [transactionPreviewMessage, setTransactionPreviewMessage] = useState("");
   const [transactionAcknowledged, setTransactionAcknowledged] = useState(false);
   const [transactionIntentConfirmed, setTransactionIntentConfirmed] = useState(false);
+  const [executionState, setExecutionState] = useState<
+    "idle" | "locked" | "submitting" | "finalized" | "error"
+  >("idle");
+  const [executionMessage, setExecutionMessage] = useState("");
 
+  const liveWriteUnlocked = isLiveBradburyWriteUnlocked();
   const action = PRODUCT_ACTIONS[mode];
 
   function resetTransactionPreview() {
@@ -127,6 +136,8 @@ export default function AgentSealLanding() {
     setTransactionPreviewMessage("");
     setTransactionAcknowledged(false);
     setTransactionIntentConfirmed(false);
+    setExecutionState("idle");
+    setExecutionMessage("");
   }
 
   const workbenchHint = useMemo(() => {
@@ -275,9 +286,41 @@ export default function AgentSealLanding() {
     if (!transactionPreview || !transactionAcknowledged) return;
 
     setTransactionIntentConfirmed(true);
+    setExecutionState("locked");
+    setExecutionMessage(
+      "Execution code is installed but the live Bradbury write lock is closed. Explicit blockchain-write authorization is required.",
+    );
     setTransactionPreviewMessage(
       "Intent confirmed locally. No transaction was submitted; execution remains locked.",
     );
+  }
+
+  async function executeConfirmedTransaction() {
+    if (!transactionPreview || !transactionIntentConfirmed) return;
+
+    if (!liveWriteUnlocked) {
+      setExecutionState("locked");
+      setExecutionMessage(
+        "Live Bradbury transaction submission is locked. No wallet signing request was made.",
+      );
+      return;
+    }
+
+    setExecutionState("submitting");
+    setExecutionMessage("Submitting to Bradbury and waiting for FINALIZED consensus…");
+
+    try {
+      const result = await executeConfirmedBradburyTransaction(transactionPreview);
+      setExecutionState("finalized");
+      setExecutionMessage(
+        `Finalized ${result.hash} / ${result.executionResult}.`,
+      );
+    } catch (error) {
+      setExecutionState("error");
+      setExecutionMessage(
+        error instanceof Error ? error.message : "Bradbury transaction execution failed.",
+      );
+    }
   }
 
   return (
@@ -671,6 +714,33 @@ export default function AgentSealLanding() {
                         ? "Intent confirmed / execution locked"
                         : "Confirm transaction intent"}
                     </button>
+
+                    {transactionIntentConfirmed ? (
+                      <div
+                        className={`execution-lock execution-lock--${executionState}`}
+                        data-testid="execution-lock"
+                        data-state={executionState}
+                      >
+                        <div className="execution-lock__heading">
+                          <span>Bradbury / execution</span>
+                          <strong>{liveWriteUnlocked ? "UNLOCKED" : "LOCKED"}</strong>
+                        </div>
+                        <p data-testid="execution-message">{executionMessage}</p>
+                        <button
+                          className="execution-lock__button"
+                          type="button"
+                          data-testid="execute-live-transaction"
+                          disabled={!liveWriteUnlocked || executionState === "submitting"}
+                          onClick={executeConfirmedTransaction}
+                        >
+                          {executionState === "submitting"
+                            ? "Waiting for finality…"
+                            : liveWriteUnlocked
+                              ? "Submit to Bradbury"
+                              : "Live submission locked"}
+                        </button>
+                      </div>
+                    ) : null}
                   </>
                 ) : null}
               </div>
@@ -678,8 +748,8 @@ export default function AgentSealLanding() {
 
             <p className="workbench-note">
               Certificate verification reads finalized Bradbury state directly through the verified GenLayer SDK.
-              Assessment and challenge flows now expose exact transaction previews and explicit intent confirmation,
-              but no signing or transaction submission code exists in this phase.
+              Assessment and challenge write execution now includes FINALIZED receipt and execution-result handling,
+              but the live Bradbury submission lock remains closed until a blockchain write is explicitly authorized.
             </p>
           </div>
         </div>

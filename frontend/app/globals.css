@@ -1092,6 +1092,59 @@ label.field-stack input:focus {
   opacity: .45;
 }
 
+.execution-lock {
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: #09090a;
+}
+
+.execution-lock--locked {
+  border-color: rgba(255,51,79,.34);
+}
+
+.execution-lock__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #777671;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.execution-lock__heading strong {
+  color: var(--red);
+}
+
+.execution-lock p {
+  margin: 12px 0 0;
+  color: #aaa8a3;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.execution-lock__button {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 14px;
+  padding: 0 14px;
+  color: #777671;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.16);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.execution-lock__button:disabled {
+  cursor: not-allowed;
+  opacity: .62;
+}
+
 .contracts-section {
   color: var(--ink);
   background: var(--red);
