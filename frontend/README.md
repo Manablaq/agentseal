@@ -19,6 +19,12 @@ The frontend constants in `lib/agentseal.ts` are pinned to the certified R7 rele
 
 The current product workbench intentionally **does not fabricate wallet or RPC results**. It exposes the exact contract/method surfaces for verification, assessment and challenge flows. Browser transport/wallet execution should be wired only after the selected GenLayer frontend SDK/RPC path is verified against the certified R7 contract ABI surface.
 
+## Live Bradbury certificate reads
+
+The verification tab uses `genlayer-js@1.1.8` with the SDK's `testnetBradbury` chain definition and `LATEST_FINAL` reads. Certificate lookup is read-only and targets the certified R7 `CertificateRegistry`.
+
+Assessment and challenge transactions remain intentionally disabled until browser-wallet signing, network switching, transaction submission, execution-result checking and finality are verified as a separate integration phase.
+
 ## Run locally
 
 ```bash

@@ -801,6 +801,105 @@ label.field-stack input:focus {
   font-size: 10px;
 }
 
+.button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+  transform: none;
+}
+
+.live-read {
+  margin-top: 18px;
+  padding: 18px;
+  background: #0f0f11;
+  border: 1px solid rgba(255,255,255,.12);
+}
+
+.live-read--success {
+  border-color: rgba(255,51,79,.65);
+}
+
+.live-read--error,
+.live-read--not-found {
+  border-color: rgba(255,255,255,.22);
+}
+
+.live-read__heading,
+.live-read__certificate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.live-read__heading {
+  color: #777671;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.live-read__heading strong {
+  color: var(--red);
+  font-size: 9px;
+}
+
+.live-read__message {
+  margin: 14px 0 0;
+  color: #aaa8a3;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.live-read__certificate {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.live-read__certificate span {
+  color: #f4f2ed;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.live-read__certificate strong {
+  color: var(--red);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: .08em;
+}
+
+.live-read__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0 0;
+}
+
+.live-read__grid div {
+  min-width: 0;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.live-read__grid dt {
+  color: #686762;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.live-read__grid dd {
+  margin: 7px 0 0;
+  overflow-wrap: anywhere;
+  color: #d6d3cd;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
 .contracts-section {
   color: var(--ink);
   background: var(--red);
@@ -1108,6 +1207,10 @@ label.field-stack input:focus {
     width: 100dvw;
     max-width: 100dvw;
     padding: 0 16px;
+  }
+
+  .live-read__grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hero {

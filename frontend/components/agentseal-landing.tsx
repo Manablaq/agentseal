@@ -6,6 +6,10 @@ import {
   PRODUCT_ACTIONS,
   shortenAddress,
 } from "@/lib/agentseal";
+import {
+  readCertificate,
+  type AgentSealCertificate,
+} from "@/lib/genlayer-read";
 
 type Mode = keyof typeof PRODUCT_ACTIONS;
 
@@ -88,6 +92,11 @@ export default function AgentSealLanding() {
   const [profileDigest, setProfileDigest] = useState("");
   const [endpoint, setEndpoint] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [certificate, setCertificate] = useState<AgentSealCertificate | null>(null);
+  const [lookupState, setLookupState] = useState<
+    "idle" | "loading" | "success" | "not-found" | "error"
+  >("idle");
+  const [lookupMessage, setLookupMessage] = useState("");
 
   const action = PRODUCT_ACTIONS[mode];
 
@@ -110,6 +119,43 @@ export default function AgentSealLanding() {
 
   function jumpToWorkbench() {
     document.getElementById("workbench")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function executeWorkbenchAction() {
+    if (mode !== "verify") return;
+
+    const value = query.trim();
+    if (!value) {
+      setCertificate(null);
+      setLookupState("error");
+      setLookupMessage("Enter a certificate ID before reading Bradbury.");
+      return;
+    }
+
+    setCertificate(null);
+    setLookupState("loading");
+    setLookupMessage(`Reading certificate #${value} from finalized Bradbury state…`);
+
+    try {
+      const result = await readCertificate(BigInt(value));
+
+      if (!result) {
+        setLookupState("not-found");
+        setLookupMessage(`Certificate #${value} does not exist in finalized Bradbury state.`);
+        return;
+      }
+
+      setCertificate(result);
+      setLookupState("success");
+      setLookupMessage(
+        `Certificate #${String(result.certificate_id)} loaded from finalized Bradbury state.`,
+      );
+    } catch (error) {
+      setLookupState("error");
+      setLookupMessage(
+        error instanceof Error ? error.message : "Bradbury certificate lookup failed.",
+      );
+    }
   }
 
   return (
@@ -310,14 +356,74 @@ export default function AgentSealLanding() {
               <p>{workbenchHint}</p>
             </div>
 
-            <button className="button button--primary button--wide" type="button">
-              {mode === "verify" ? "Prepare lookup" : mode === "assess" ? "Prepare assessment" : "Prepare challenge"}
+            <button
+              className="button button--primary button--wide"
+              type="button"
+              onClick={executeWorkbenchAction}
+              disabled={mode !== "verify" || lookupState === "loading" || !query.trim()}
+            >
+              {mode === "verify"
+                ? lookupState === "loading"
+                  ? "Reading Bradbury…"
+                  : "Verify certificate"
+                : "Wallet integration pending"}
               <span aria-hidden="true">↗</span>
             </button>
 
+            {mode === "verify" && lookupState !== "idle" ? (
+              <div
+                className={`live-read live-read--${lookupState}`}
+                data-testid="live-certificate-result"
+                data-state={lookupState}
+              >
+                <div className="live-read__heading">
+                  <span>Bradbury / latest-final</span>
+                  <strong>{lookupState === "success" ? "LIVE READ" : lookupState.toUpperCase()}</strong>
+                </div>
+
+                <p className="live-read__message">{lookupMessage}</p>
+
+                {certificate ? (
+                  <>
+                    <div className="live-read__certificate">
+                      <span>Certificate #{String(certificate.certificate_id)}</span>
+                      <strong>{certificate.effective_status}</strong>
+                    </div>
+                    <dl className="live-read__grid">
+                      <div>
+                        <dt>Policy</dt>
+                        <dd>{certificate.policy_id} / v{String(certificate.policy_version)}</dd>
+                      </div>
+                      <div>
+                        <dt>Capability</dt>
+                        <dd>{certificate.capability_id}</dd>
+                      </div>
+                      <div>
+                        <dt>Subject</dt>
+                        <dd>{shortenAddress(certificate.subject_wallet, 8, 6)}</dd>
+                      </div>
+                      <div>
+                        <dt>Manifest</dt>
+                        <dd>{certificate.manifest_id}</dd>
+                      </div>
+                      <div>
+                        <dt>Expires</dt>
+                        <dd>{String(certificate.expires_at)}</dd>
+                      </div>
+                      <div>
+                        <dt>Binding</dt>
+                        <dd>{certificate.binding_key}</dd>
+                      </div>
+                    </dl>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+
             <p className="workbench-note">
-              No fabricated chain response: this foundation exposes certified identities now; wallet + RPC execution
-              is added only after the GenLayer browser transport is verified against the R7 contracts.
+              Certificate verification now reads finalized Bradbury state directly through the verified GenLayer SDK.
+              Assessment and challenge writes remain disabled until wallet signing and transaction finality are
+              separately verified.
             </p>
           </div>
         </div>
