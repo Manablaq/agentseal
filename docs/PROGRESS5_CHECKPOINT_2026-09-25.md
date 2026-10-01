@@ -1,124 +1,132 @@
-# AgentSeal Progress 5 completion checkpoint — 2026-09-25
+# AgentSeal Progress 5 checkpoint — 2026-09-25
 
-This file is the final local Progress 5 checkpoint. The legacy filename is
-preserved for continuity. Bradbury deployment remains a separate next phase and
-has not yet been performed.
+This filename is retained for continuity. It records the historical local RC7
+checkpoint from 2026-09-25 and is superseded for current release status by the
+R7 Bradbury certification completed on 2026-10-01.
 
-## Repository and source identity
+## Historical RC7 checkpoint
 
-- Base commit entering final reconciliation:
-  `1bb1ff6972af9f744a2f86bd560abae68d78c179`.
-- Base tree:
-  `caaea11bad57bf41adb9943f3cd7de58d121be97`.
-- Contract SHA-256:
-  `61801db265c19b58f09d14b446af2c46fcb6da050852879a01df01a78f1b726d`.
-- Repaired fixture-service SHA-256:
-  `07e77dbf04030ecffd9f8adc616603e78be245466451028bd37a4de9b174a59a`.
-- Agent profile SHA-256:
-  `bc32dc6c11ac40ce5593a38dbb01a073dc52258bcb9efd0ad7189109b440df39`.
-- Manifest SHA-256:
-  `adebc57268330448f68b1773c29d064f115c1cdbac316e19e2af68df2b611dfa`.
-- Frozen manifest/source commit:
-  `e8e9d90c124e4b77d2371b57ab7f60fe2d6f4a35`.
+At the 2026-09-25 checkpoint, AgentSeal had completed the local supported-runtime
+matrix and fee-profile work, but the later R7 canonical Bradbury deployment had
+not yet been executed.
 
-## Production fixture deployment
+Historical identities from that checkpoint included:
 
-The repaired fixture was deployed exactly once to the existing Vercel project:
+- base commit entering final reconciliation:
+  `1bb1ff6972af9f744a2f86bd560abae68d78c179`
+- base tree:
+  `caaea11bad57bf41adb9943f3cd7de58d121be97`
+- repaired fixture-service SHA-256:
+  `07e77dbf04030ecffd9f8adc616603e78be245466451028bd37a4de9b174a59a`
+- agent profile SHA-256:
+  `bc32dc6c11ac40ce5593a38dbb01a073dc52258bcb9efd0ad7189109b440df39`
+- manifest-v1 SHA-256:
+  `adebc57268330448f68b1773c29d064f115c1cdbac316e19e2af68df2b611dfa`
+- frozen manifest/source commit:
+  `e8e9d90c124e4b77d2371b57ab7f60fe2d6f4a35`
 
-- Project: `agentseal-bradbury-fixtures`.
-- Project ID: `prj_BvYSfGxbOoVuOCCjopVAVh4cK0St`.
-- Deployment ID: `dpl_GGKtqVBPGcnUTabP2ZEUmsRMQpJ8`.
-- Stable URL: `https://agentseal-bradbury-fixtures.vercel.app`.
-- Exact repaired fixture SHA-256:
-  `07e77dbf04030ecffd9f8adc616603e78be245466451028bd37a4de9b174a59a`.
+The historical local matrix proved stable PASS, stable challenge rejection,
+subject self-revocation, drift PASS, drift challenge upholding with consensus
+revocation, FAIL without certificate issuance, and explicit expiry/liveness
+recovery.
 
-The deployment was produced from CLI-staged repaired bytes. Vercel metadata did
-not independently expose a cryptographic Git-commit binding for those deployed
-bytes. This limitation remains explicit.
+The historical `fee-profile.json` remains an RC7 artifact:
 
-## RC7 supported-runtime verification
-
-- Isolated simulator chain ID: `61127`.
-- Contract address: `0x0aD72A9a303bDF888d3bf7d76e3568248a353199`.
-- Subject: `0xF97489d7C61187BA2F99d89fe75274BBa7776908`.
-- Validator count: `5`.
-- Validator model: `openai/gpt-5-mini`.
-- Stage-1 manifest SHA-256:
-  `9e2650427414dd68b0c14e6c2f0908f20c1a9f328502b2428033c57b04ea5c99`.
-- Stage-2 manifest SHA-256:
-  `a22c8e790cecc8019b2a04ba863e93af160f897c693d55c5c839400051f6f15a`.
-
-The final local semantic matrix proves:
-
-- Stable assessment: `PASSED`.
-- Stable challenge: `REJECTED`; certificate remained active.
-- Direct subject revocation: certificate `REVOKED`, source
-  `SUBJECT_SELF_REVOKE`.
-- Drift assessment: `PASSED`.
-- Drift challenge: `UPHELD`; certificate `REVOKED`, source
-  `CHALLENGE_CONSENSUS`.
-- Fail assessment: `FAILED`; certificate ID `0`; no certificate issued.
-
-Stage-1 and Stage-2 writes were submitted once, tracked to `FINALIZED`, and
-their finality evidence was SHA-256 recorded.
-
-## Expiry and liveness recovery
-
-The original stable certificate used a 900-second TTL. Operation 05 finalized,
-but its certificate/challenge expired before operation 06 could be submitted.
-The explicit permissionless expiry paths were then exercised to materialize the
-expired challenge and certificate.
-
-A fresh stable lifecycle used the policy maximum 3600-second TTL and completed
-stable challenge evaluation and direct revocation with finality. The Bradbury
-integration test now uses `CERT_TTL = 3600`.
-
-## Final fee profile
-
-- Artifact: `fee-profile.json`.
 - SHA-256:
-  `5a45f83b7d5af82452bb20221bf9f4afb0b6014fd2e075744c2d37947b9e992e`.
-- Schema: `agentseal-fee-profile-v1`.
-- Target chain ID: `4221`.
-- Operation count: `13`.
-- Conservative execution-budget multiplier: `2×` (`20000` bps).
-- The multiplier is an AgentSeal release-safety policy, not a GenLayer protocol
-  requirement.
-- Portable evidence ledger:
-  `docs/RC7_FEE_PROFILE_EVIDENCE_2026-09-25.md`.
+  `5a45f83b7d5af82452bb20221bf9f4afb0b6014fd2e075744c2d37947b9e992e`
+- schema: `agentseal-fee-profile-v1`
+- target chain ID: `4221`
+- operation count: `13`
+- conservative execution-budget multiplier: `2x` (`20000` bps)
 
-## Retry and finality hardening
+## Superseding R7 Bradbury release
 
-The Bradbury integration checkpoint persists submission intent before a write.
-An ambiguous submission result is marked `OUTCOME_UNKNOWN` and is not blindly
-retried; chain state must be reconciled first.
+The current backend release is the split-contract R7 deployment sourced from:
 
-The RC7 state reader checks chain identity before contract reads and
-distinguishes latest-final from latest-nonfinal probing.
+- source commit:
+  `1ec79cc9ba9bf711e73df5ecea2cec0f621c8b2a`
+- source tree:
+  `1d775b839f9bed381b4981d56fbfb870d8c8b905`
+- policy ID:
+  `agentseal-bradbury-v1`
+- policy version:
+  `2`
+- manifest ID:
+  `agentseal-bradbury-manifest-v2`
+- manifest SHA-256:
+  `e6bc4f7737f990c94cbf49b98343fab2c1474d1ba2108d627856e7465be36507`
+- certificate TTL:
+  `604800` seconds
 
-## Final local release gates
+R7 addresses:
 
-- `genvm-lint check contracts/agentseal.py`: PASS.
-- `genvm-lint typecheck contracts/agentseal.py`: PASS.
-- Exact Direct Mode regression:
-  `363 passed in 8.01s`.
-- Safe non-live release guards:
-  `7 passed in 0.02s`.
-- `fee-profile.json` structure/portability guard: PASS.
-- `artifacts/.gitkeep` restored to the exact tracked empty file after the test
-  harness cleared the artifacts directory.
-- Bradbury live integration remains opt-in behind
-  `AGENTSEAL_RUN_BRADBURY_SUPPORTED_RUNTIME=1`.
+- PolicyRegistry:
+  `0x551355C4690AAd6066626A87E94f24d71593B8a7`
+- Registry:
+  `0xdbED185B52871ac70B5Cd114A26a2B7912224BBF`
+- CertificateRegistry:
+  `0xB683ab8DeCE80b1d170473D4FBd4b83083BcaA73`
+- DeterministicSupport:
+  `0x2B811C62F1e29E7edE29127c7bABEDC65fb8A162`
+- Challenge:
+  `0x8ed9D8cb10BC4EDb4Ebb8f412f4Be68be7abf6Cd`
+- SemanticJudge:
+  `0x3188310A01d64FACf6b1216aAF2722c748d03d28`
+- AssessmentEvidenceEvaluator:
+  `0x70CAcB92efc405D98E6Afdc4f8BEf691448Bfc2C`
+- ChallengeEvidenceEvaluator:
+  `0x09f6404544A6F7bEAA157a84487D650A18001C91`
 
-## Safety boundary
+The R7 live certification proves:
 
-At this checkpoint:
+- setup roots finalized: `12/12`
+- semantic matrix roots finalized: `11/11`
+- total root sends: `23`
+- root EVM receipts successful: `23/23`
+- unique GenLayer transactions audited:
+  `44`
+- every recorded GenLayer transaction:
+  `FINALIZED / execution_result=1`
+- blind retry:
+  `NO`
+- stable result:
+  `PASSED -> REJECTED challenge -> SUBJECT_SELF_REVOKE`
+- drift result:
+  `PASSED -> UPHELD challenge -> CHALLENGE_CONSENSUS revocation`
+- fail result:
+  `FAILED`, no certificate
+- final active certificates:
+  none
 
-- Bradbury contract deployment: **not performed**.
-- Bradbury contract writes: **none**.
-- Additional Vercel deployment: **none**.
-- Local RC7 runtime matrix: **complete**.
-- Final fee profile: **complete**.
-- Local release verification: **complete**.
-- Next phase: canonical Bradbury deployment, followed by the live finalized
-  13-operation matrix and final backend audit/freeze.
+Step-5 audit fingerprint:
+
+`dd054837e3a60776285040dcae05eaaa5cf2d3bbf92d8fe9d4ad2375a5240541`
+
+The detailed reviewer-facing release record is
+`docs/BRADBURY_R7_CERTIFICATION_2026-10-01.md`.
+
+## Production fixture continuity
+
+The existing production fixture project and stable URL were preserved:
+
+`https://agentseal-bradbury-fixtures.vercel.app`
+
+No additional Vercel deployment was required for the R7 certification.
+
+The original metadata limitation remains: Vercel deployment metadata did not
+independently provide a cryptographic Git-commit binding for the fixture bytes.
+
+## Current safety boundary
+
+The 2026-09-25 no-write statement was true only for that historical checkpoint.
+It must not be interpreted as the current backend state.
+
+As of the R7 certification:
+
+- canonical Bradbury split-contract deployment: complete
+- Bradbury setup writes: complete and finalized
+- Bradbury stable/drift/fail matrix: complete and finalized
+- finality/evidence audit: complete
+- additional blind retry: none
+- additional fixture deployment: none
+- frontend work: outside this backend certification scope
