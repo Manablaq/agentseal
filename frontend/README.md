@@ -25,7 +25,9 @@ The verification tab uses `genlayer-js@1.1.8` with the SDK's `testnetBradbury` c
 
 The workbench also includes an injected EIP-1193 wallet transport. On explicit user action it requests an account, binds the wallet to Bradbury (chain `4221`) and constructs a GenLayer write client using the connected address and provider.
 
-Assessment and challenge transaction submission remains intentionally disabled. The wallet transport is separated from transaction execution so connecting a wallet cannot submit a blockchain write.
+Assessment and challenge flows now expose deterministic transaction previews for the exact certified targets and methods. Preparing a preview does not sign or submit anything. A separate acknowledgement checkbox and intent-confirmation action are required, and even confirmed intent remains execution-locked in this phase.
+
+No `writeContract` call is wired to the product surface yet. Transaction submission is added only after the preview/confirmation boundary is certified and a real Bradbury write is separately authorized.
 
 ## Run locally
 

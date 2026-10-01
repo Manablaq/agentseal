@@ -15,6 +15,11 @@ import {
   connectBradburyWallet,
   hasInjectedWallet,
 } from "@/lib/genlayer-wallet";
+import {
+  buildAssessmentTransactionPreview,
+  buildChallengeTransactionPreview,
+  type AgentSealTransactionPreview,
+} from "@/lib/genlayer-transaction-preview";
 
 type Mode = keyof typeof PRODUCT_ACTIONS;
 
@@ -109,8 +114,20 @@ export default function AgentSealLanding() {
   const [walletMessage, setWalletMessage] = useState(
     "Connect an injected wallet to prepare authenticated write flows.",
   );
+  const [transactionPreview, setTransactionPreview] =
+    useState<AgentSealTransactionPreview | null>(null);
+  const [transactionPreviewMessage, setTransactionPreviewMessage] = useState("");
+  const [transactionAcknowledged, setTransactionAcknowledged] = useState(false);
+  const [transactionIntentConfirmed, setTransactionIntentConfirmed] = useState(false);
 
   const action = PRODUCT_ACTIONS[mode];
+
+  function resetTransactionPreview() {
+    setTransactionPreview(null);
+    setTransactionPreviewMessage("");
+    setTransactionAcknowledged(false);
+    setTransactionIntentConfirmed(false);
+  }
 
   const workbenchHint = useMemo(() => {
     if (mode === "verify") {
@@ -119,15 +136,21 @@ export default function AgentSealLanding() {
         : "Enter a certificate ID to prepare a read-only certificate lookup.";
     }
     if (mode === "challenge") {
+      if (walletState !== "connected") {
+        return "Connect a Bradbury wallet, then enter a certificate ID to review the challenge transaction.";
+      }
       return query.trim()
-        ? `Certificate #${query.trim()} is prepared for challenge flow review.`
-        : "Enter a certificate ID to prepare the challenge flow.";
+        ? `Certificate #${query.trim()} is ready for a no-submit challenge transaction preview.`
+        : "Enter a certificate ID to prepare the challenge transaction preview.";
+    }
+    if (walletState !== "connected") {
+      return "Connect a Bradbury wallet before reviewing an assessment transaction.";
     }
     if (profileDigest.trim() && endpoint.trim()) {
-      return "Assessment request prepared. Wallet transaction wiring is the next integration layer.";
+      return "Assessment inputs are ready for a no-submit transaction preview.";
     }
-    return "Provide an agent profile digest and HTTPS endpoint to prepare an assessment request.";
-  }, [mode, query, profileDigest, endpoint]);
+    return "Provide a 64-character lowercase profile digest and HTTPS endpoint.";
+  }, [mode, query, profileDigest, endpoint, walletState]);
 
   function jumpToWorkbench() {
     document.getElementById("workbench")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -200,6 +223,61 @@ export default function AgentSealLanding() {
     setWalletAddress("");
     setWalletState("idle");
     setWalletMessage("Wallet transport cleared locally. No transaction was submitted.");
+    resetTransactionPreview();
+  }
+
+  function selectMode(nextMode: Mode) {
+    setMode(nextMode);
+    resetTransactionPreview();
+  }
+
+  function prepareTransactionPreview() {
+    if (mode === "verify") return;
+
+    if (walletState !== "connected" || !walletAddress) {
+      setTransactionPreview(null);
+      setTransactionPreviewMessage("Connect a Bradbury wallet before reviewing this transaction.");
+      setTransactionAcknowledged(false);
+      setTransactionIntentConfirmed(false);
+      return;
+    }
+
+    try {
+      const preview =
+        mode === "assess"
+          ? buildAssessmentTransactionPreview({
+              account: walletAddress,
+              profileDigest,
+              endpoint,
+            })
+          : buildChallengeTransactionPreview({
+              account: walletAddress,
+              certificateId: query,
+            });
+
+      setTransactionPreview(preview);
+      setTransactionPreviewMessage(
+        "Review every field below. This preview cannot submit or sign a transaction.",
+      );
+      setTransactionAcknowledged(false);
+      setTransactionIntentConfirmed(false);
+    } catch (error) {
+      setTransactionPreview(null);
+      setTransactionPreviewMessage(
+        error instanceof Error ? error.message : "Transaction preview could not be prepared.",
+      );
+      setTransactionAcknowledged(false);
+      setTransactionIntentConfirmed(false);
+    }
+  }
+
+  function confirmTransactionIntent() {
+    if (!transactionPreview || !transactionAcknowledged) return;
+
+    setTransactionIntentConfirmed(true);
+    setTransactionPreviewMessage(
+      "Intent confirmed locally. No transaction was submitted; execution remains locked.",
+    );
   }
 
   return (
@@ -389,7 +467,7 @@ export default function AgentSealLanding() {
                 role="tab"
                 aria-selected={mode === item}
                 className={mode === item ? "is-active" : ""}
-                onClick={() => setMode(item)}
+                onClick={() => selectMode(item)}
               >
                 {PRODUCT_ACTIONS[item].label}
               </button>
@@ -408,15 +486,21 @@ export default function AgentSealLanding() {
                   Agent profile digest
                   <input
                     value={profileDigest}
-                    onChange={(event) => setProfileDigest(event.target.value)}
-                    placeholder="sha256:…"
+                    onChange={(event) => {
+                      setProfileDigest(event.target.value);
+                      resetTransactionPreview();
+                    }}
+                    placeholder="64 lowercase hex characters"
                   />
                 </label>
                 <label>
                   Agent endpoint
                   <input
                     value={endpoint}
-                    onChange={(event) => setEndpoint(event.target.value)}
+                    onChange={(event) => {
+                      setEndpoint(event.target.value);
+                      resetTransactionPreview();
+                    }}
                     placeholder="https://agent.example/api"
                   />
                 </label>
@@ -427,7 +511,10 @@ export default function AgentSealLanding() {
                 <input
                   inputMode="numeric"
                   value={query}
-                  onChange={(event) => setQuery(event.target.value.replace(/[^0-9]/g, ""))}
+                  onChange={(event) => {
+                    setQuery(event.target.value.replace(/[^0-9]/g, ""));
+                    resetTransactionPreview();
+                  }}
                   placeholder="e.g. 42"
                 />
               </label>
@@ -441,14 +528,24 @@ export default function AgentSealLanding() {
             <button
               className="button button--primary button--wide"
               type="button"
-              onClick={executeWorkbenchAction}
-              disabled={mode !== "verify" || lookupState === "loading" || !query.trim()}
+              data-testid="workbench-primary-action"
+              onClick={mode === "verify" ? executeWorkbenchAction : prepareTransactionPreview}
+              disabled={
+                mode === "verify"
+                  ? lookupState === "loading" || !query.trim()
+                  : walletState !== "connected" ||
+                    (mode === "assess"
+                      ? !profileDigest.trim() || !endpoint.trim()
+                      : !query.trim())
+              }
             >
               {mode === "verify"
                 ? lookupState === "loading"
                   ? "Reading Bradbury…"
                   : "Verify certificate"
-                : "Wallet integration pending"}
+                : mode === "assess"
+                  ? "Review assessment transaction"
+                  : "Review challenge transaction"}
               <span aria-hidden="true">↗</span>
             </button>
 
@@ -502,10 +599,87 @@ export default function AgentSealLanding() {
               </div>
             ) : null}
 
+            {mode !== "verify" && transactionPreviewMessage ? (
+              <div
+                className={`transaction-preview ${
+                  transactionIntentConfirmed ? "transaction-preview--confirmed" : ""
+                }`}
+                data-testid="transaction-preview"
+                data-state={transactionIntentConfirmed ? "confirmed" : transactionPreview ? "review" : "error"}
+              >
+                <div className="transaction-preview__heading">
+                  <span>Bradbury / transaction preview</span>
+                  <strong>NO SUBMIT</strong>
+                </div>
+
+                <p>{transactionPreviewMessage}</p>
+
+                {transactionPreview ? (
+                  <>
+                    <dl className="transaction-preview__grid">
+                      <div>
+                        <dt>Account</dt>
+                        <dd>{transactionPreview.account}</dd>
+                      </div>
+                      <div>
+                        <dt>Chain</dt>
+                        <dd>{transactionPreview.chainId}</dd>
+                      </div>
+                      <div>
+                        <dt>Contract</dt>
+                        <dd>{transactionPreview.contract}</dd>
+                      </div>
+                      <div>
+                        <dt>Target</dt>
+                        <dd>{transactionPreview.target}</dd>
+                      </div>
+                      <div>
+                        <dt>Method</dt>
+                        <dd>{transactionPreview.functionName}</dd>
+                      </div>
+                      <div>
+                        <dt>Value</dt>
+                        <dd>{transactionPreview.value}</dd>
+                      </div>
+                      <div className="transaction-preview__args">
+                        <dt>Arguments</dt>
+                        <dd>{JSON.stringify(transactionPreview.args)}</dd>
+                      </div>
+                    </dl>
+
+                    <label className="transaction-preview__ack">
+                      <input
+                        type="checkbox"
+                        data-testid="transaction-confirmation-checkbox"
+                        checked={transactionAcknowledged}
+                        onChange={(event) => {
+                          setTransactionAcknowledged(event.target.checked);
+                          setTransactionIntentConfirmed(false);
+                        }}
+                      />
+                      <span>{transactionPreview.confirmationText}</span>
+                    </label>
+
+                    <button
+                      className="transaction-preview__confirm"
+                      type="button"
+                      data-testid="confirm-transaction-intent"
+                      disabled={!transactionAcknowledged || transactionIntentConfirmed}
+                      onClick={confirmTransactionIntent}
+                    >
+                      {transactionIntentConfirmed
+                        ? "Intent confirmed / execution locked"
+                        : "Confirm transaction intent"}
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+
             <p className="workbench-note">
               Certificate verification reads finalized Bradbury state directly through the verified GenLayer SDK.
-              Wallet transport can now bind an injected account to Bradbury, but assessment and challenge transaction
-              submission remain disabled until the write path is separately certified.
+              Assessment and challenge flows now expose exact transaction previews and explicit intent confirmation,
+              but no signing or transaction submission code exists in this phase.
             </p>
           </div>
         </div>
