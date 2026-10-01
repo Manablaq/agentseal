@@ -10,6 +10,11 @@ import {
   readCertificate,
   type AgentSealCertificate,
 } from "@/lib/genlayer-read";
+import {
+  clearBradburyWalletClient,
+  connectBradburyWallet,
+  hasInjectedWallet,
+} from "@/lib/genlayer-wallet";
 
 type Mode = keyof typeof PRODUCT_ACTIONS;
 
@@ -97,6 +102,13 @@ export default function AgentSealLanding() {
     "idle" | "loading" | "success" | "not-found" | "error"
   >("idle");
   const [lookupMessage, setLookupMessage] = useState("");
+  const [walletState, setWalletState] = useState<
+    "idle" | "connecting" | "connected" | "error"
+  >("idle");
+  const [walletAddress, setWalletAddress] = useState("");
+  const [walletMessage, setWalletMessage] = useState(
+    "Connect an injected wallet to prepare authenticated write flows.",
+  );
 
   const action = PRODUCT_ACTIONS[mode];
 
@@ -156,6 +168,38 @@ export default function AgentSealLanding() {
         error instanceof Error ? error.message : "Bradbury certificate lookup failed.",
       );
     }
+  }
+
+  async function connectWallet() {
+    setWalletState("connecting");
+    setWalletMessage("Requesting wallet access and Bradbury network binding…");
+
+    try {
+      if (!hasInjectedWallet()) {
+        throw new Error("No injected EIP-1193 wallet was detected.");
+      }
+
+      const connection = await connectBradburyWallet();
+      setWalletAddress(connection.address);
+      setWalletState("connected");
+      setWalletMessage(
+        `Connected to GenLayer Testnet Bradbury / chain ${connection.chainId}.`,
+      );
+    } catch (error) {
+      clearBradburyWalletClient();
+      setWalletAddress("");
+      setWalletState("error");
+      setWalletMessage(
+        error instanceof Error ? error.message : "Wallet connection failed.",
+      );
+    }
+  }
+
+  function disconnectWallet() {
+    clearBradburyWalletClient();
+    setWalletAddress("");
+    setWalletState("idle");
+    setWalletMessage("Wallet transport cleared locally. No transaction was submitted.");
   }
 
   return (
@@ -296,6 +340,44 @@ export default function AgentSealLanding() {
               <small>{AGENTSEAL_RELEASE.manifestId}</small>
             </div>
           </div>
+
+          <div
+            className={`wallet-transport wallet-transport--${walletState}`}
+            data-testid="wallet-transport"
+            data-state={walletState}
+          >
+            <div className="wallet-transport__status">
+              <span className="status-pulse" />
+              <div>
+                <strong>
+                  {walletState === "connected"
+                    ? "Bradbury wallet connected"
+                    : "Wallet transport"}
+                </strong>
+                <small data-testid="wallet-message">{walletMessage}</small>
+              </div>
+            </div>
+
+            {walletAddress ? (
+              <code data-testid="wallet-address">
+                {shortenAddress(walletAddress, 8, 6)}
+              </code>
+            ) : null}
+
+            <button
+              className="wallet-transport__button"
+              type="button"
+              data-testid="wallet-connect"
+              onClick={walletState === "connected" ? disconnectWallet : connectWallet}
+              disabled={walletState === "connecting"}
+            >
+              {walletState === "connecting"
+                ? "Connecting…"
+                : walletState === "connected"
+                  ? "Disconnect"
+                  : "Connect wallet"}
+            </button>
+          </div>
         </div>
 
         <div className="workbench-panel">
@@ -421,9 +503,9 @@ export default function AgentSealLanding() {
             ) : null}
 
             <p className="workbench-note">
-              Certificate verification now reads finalized Bradbury state directly through the verified GenLayer SDK.
-              Assessment and challenge writes remain disabled until wallet signing and transaction finality are
-              separately verified.
+              Certificate verification reads finalized Bradbury state directly through the verified GenLayer SDK.
+              Wallet transport can now bind an injected account to Bradbury, but assessment and challenge transaction
+              submission remain disabled until the write path is separately certified.
             </p>
           </div>
         </div>

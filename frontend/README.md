@@ -23,7 +23,9 @@ The current product workbench intentionally **does not fabricate wallet or RPC r
 
 The verification tab uses `genlayer-js@1.1.8` with the SDK's `testnetBradbury` chain definition and `LATEST_FINAL` reads. Certificate lookup is read-only and targets the certified R7 `CertificateRegistry`.
 
-Assessment and challenge transactions remain intentionally disabled until browser-wallet signing, network switching, transaction submission, execution-result checking and finality are verified as a separate integration phase.
+The workbench also includes an injected EIP-1193 wallet transport. On explicit user action it requests an account, binds the wallet to Bradbury (chain `4221`) and constructs a GenLayer write client using the connected address and provider.
+
+Assessment and challenge transaction submission remains intentionally disabled. The wallet transport is separated from transaction execution so connecting a wallet cannot submit a blockchain write.
 
 ## Run locally
 
